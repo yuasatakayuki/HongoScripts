@@ -3,7 +3,7 @@
 
 if(args.size()<2){
 println "give filename and regex"
-exit
+System.exit(1)
 }
 
 text = new File(args[0]).text
