@@ -1,0 +1,1 @@
+../suzaku_pin/pin_barycentric_correction.sh

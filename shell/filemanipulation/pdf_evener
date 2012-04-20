@@ -1,0 +1,32 @@
+#!/bin/bash
+
+#20081111 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo "give input PDF file"
+exit
+fi
+
+for file in $@;
+do
+
+pages=`pdftk $file dump_data | grep "NumberOfPages" | sed -e "s/NumberOfPages://g"`
+
+echo "Number of pages is $pages"
+
+remainder=`expr $pages % 2`
+
+if [ $remainder = 1 ];
+then
+
+newfile=`basename $file .pdf`_even.pdf
+pdftk $file $hongoscriptdir/shell/filemanipulation/empty_pdf.pdf cat output $newfile
+
+mv $newfile $file
+else
+echo "This PDF file has already even pages."
+fi
+
+
+done

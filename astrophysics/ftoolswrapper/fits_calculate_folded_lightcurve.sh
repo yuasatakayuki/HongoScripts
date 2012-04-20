@@ -1,0 +1,98 @@
+#!/bin/bash
+
+#20090902 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+
+cat << EOF
+fits_calculate_folded_lightcurve.sh \\
+                          (1:input event file) \\
+                          (2:output fits file prefix) \\
+                          (3:output plot file prefix) \\
+                          (4:folding period in sec) \\
+                          (5:number of bins per phase) \\
+                          (6:numer of bins per interval) \\
+                          (7:number of intervals per frame;optional)
+EOF
+exit
+
+fi
+
+#parameters
+windowfile=$hongoscriptsdir/astrophysics/etc/xronos_nowindow.wi
+
+inputfile=$1
+outputprefix=$2
+plotprefix=$3
+period=$4
+numberofbinsperphase=$5
+numberofbinsperinterval=$6
+
+if [ _$7 = _ ];
+then
+numberofintervalsperframe=1000000
+else
+numberofintervalsperframe=$7
+fi
+
+#output plot files
+psfile=${plotprefix}.ps
+
+#create directory
+mkdir -p `dirname $outputprefix` &> /dev/null
+mkdir -p `dirname $plotprefix` &> /dev/null
+
+#delete qdp files
+delete_qdp_files.sh ${outputprefix}.qdp
+delete_qdp_files.sh ${plotprefix}.qdp
+
+#tmporary files
+tmpqdpprefix=`get_hash_random.pl`
+
+#calculate folded lightcurve
+efold \
+ nser=1 \
+ cfile1="$inputfile" \
+ window=$windowfile \
+ sepoch=INDEF \
+ dper=$period \
+ nphase=$numberofbinsperphase \
+ nbint=$numberofbinsperinterval \
+ nintfm=$numberofintervalsperframe \
+ plot=yes \
+ plotdev="/xw" \
+ outfile="${outputprefix}.fef" << EOF
+
+we $tmpqdpprefix
+exit
+
+EOF
+
+#get max/min of the plot
+ymax=`qdp_get_plot_range_from_a_pco_file.sh ${tmpqdpprefix}.pco y2 maximum`
+ymax=`calc "$ymax*1.3"`
+
+#plot with appropriate range
+qdp $tmpqdpprefix << EOF
+/xw
+la f 
+ti of
+lwidth 3
+lwidth 3 on 1..50
+fo ro
+cs 1.3
+r y 0 $ymax
+we ${plotprefix}
+hard $psfile/cps
+exit
+EOF
+
+rm -f ${tmpqdpprefix}.pco ${tmpqdpprefix}.qdp
+
+#convert ps to pdf
+pushd `dirname $plotprefix`
+
+ps2pdf `basename $psfile`
+
+popd

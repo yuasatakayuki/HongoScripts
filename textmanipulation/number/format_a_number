@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+
+#20100929 Takayuki Yuasa
+
+err=STDERR
+
+if(ARGV.length!=2)then
+err.puts "usage : format_a_number (formatted string) (Ruby-style format)"
+err.puts "exmaple : format_a_number 123.456 '%.1f'  ==> 123.5"
+exit
+end
+
+puts "#{ARGV[1]}" % [ARGV[0].to_f]

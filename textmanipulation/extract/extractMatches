@@ -1,0 +1,17 @@
+#!/usr/bin/env groovy
+//20120421 Takayuki Yuasa
+
+if(args.size()<2){
+println "give filename and regex"
+exit
+}
+
+text = new File(args[0]).text
+regex = /${args[1]}/
+m =  text =~ regex
+//println m
+//println m.matches()
+//println m.size() 
+m.each {
+ println it
+}

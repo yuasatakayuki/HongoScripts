@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if [ _$1 = _ ]; then
+cat << EOF
+qdpps2pdf (input ps file)
+
+This program converts PS file output from QDP to PDF with
+a bounding box adjusted to enclose whole the figure.
+Internally, ps2eps and ps2pdf are used.
+
+EOF
+exit
+fi
+
+
+for ps in $@; do
+
+if [ ! -f $ps ]; then
+echo "input file not found..."
+exit
+fi
+
+eps=`dirname $ps`/`basename $ps .ps`.eps
+epseps=`dirname $ps`/`basename $ps .ps`.eps.eps
+pdf=`dirname $ps`/`basename $ps .ps`.eps.pdf
+output=`dirname $ps`/`basename $ps .ps`.pdf
+
+ps2eps --ignoreBB -R + -f $ps
+ps2eps -l $eps
+ps2pdf -dEPSCrop $epseps
+mv $pdf $output
+
+rm -f $eps $epseps
+
+done

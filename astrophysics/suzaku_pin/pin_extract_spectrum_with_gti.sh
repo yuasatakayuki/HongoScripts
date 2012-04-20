@@ -1,0 +1,153 @@
+#!/bin/bash
+
+#20090305 Takayuki Yuasa
+#20090511 Takayuki Yuasa
+
+#pin_extract_spectrum_with_gti.sh
+
+if [ _$4 = _ ];
+then
+echo "usage : pin_extract_spectrum_with_gti.sh (event_file) (pseudo_file) (gti_file) (output_phafile) (extra_condition_file;optional)"
+echo "note : when pseudo_file option is \"none\", no dead-time is applied when extracting spectrum"
+exit
+fi
+
+#parameter set
+
+event_file=$1
+
+#pseudo file
+if [ $2 = none ];
+then
+pseudo_file="none"
+else
+pseudo_file=$2
+fi
+
+#if gti_file=="none", then no gti is applied when extracting spectrum.
+if [ $3 = none ];
+then
+filter_gti=""
+else
+filter_gti="filter time file $3"
+fi
+
+output_phafile=$4
+
+#extra condition file
+if [ _$5 != _ ];
+then
+if [ -f $5 ];
+then
+condition=`cat $5`
+else
+condition=""
+fi
+fi
+
+if [ _`dirname $output_phafile` != _ ];
+then
+if [ ! -d `dirname $output_phafile` ];
+then
+echo "folder `dirname $output_phafile` is not found. Created."
+mkdir -p `dirname $output_phafile`
+fi
+fi
+
+#execution
+logfile=${output_phafile}.log
+#XSPEC
+rm -f $output_phafile
+rm -f $logfile
+xselect << EOF 2>&1 | tee -a $logfile
+
+read event $event_file ./
+$filter_gti
+$condition
+extract spec
+save spec $output_phafile
+n
+
+exit
+no
+
+EOF
+
+#event dead time correction
+if [ $pseudo_file != none ];
+then
+#fileter pseudo file
+tmppseudofile=`get_hash_random.pl`_pseudo.evt
+xselect << EOF 2>&1 | tee -a $logfile
+
+read event $pseudo_file ./
+$filter_gti
+$condition
+extract event
+save event $tmppseudofile
+n
+
+exit
+no
+
+EOF
+tmpdtcor=`basename $output_phafile .pha`
+tmpdtcor=`basename $tmpdtcor .pi`
+output_phafile_dtcor=`dirname $output_phafile`/${tmpdtcor}_dtcor.pi
+cp $output_phafile $output_phafile_dtcor
+hxddtcor $tmppseudofile $output_phafile_dtcor 2>&1 | tee -a $logfile
+rm -f $tmppseudofile
+
+else
+
+output_phafile_dtcor=$output_phafile
+
+fi
+
+#rebinning if input file is a raw event file
+if [ ! `indexof.pl $event_file _evt` = -1 ];
+then
+cd `dirname ${output_phafile}`
+groupmin `basename ${output_phafile_dtcor}` 20 2>&1 | tee -a `basename $logfile`
+groupmin `basename ${output_phafile_dtcor}` 40 2>&1 | tee -a `basename $logfile`
+groupmin `basename ${output_phafile_dtcor}` 60 2>&1 | tee -a `basename $logfile`
+groupmin `basename ${output_phafile_dtcor}` 80 2>&1 | tee -a `basename $logfile`
+cd -
+fi
+
+#nxb exposure correction
+if [ ! `indexof.pl $event_file _nxb` = -1 ];
+then
+cd `dirname ${output_phafile}`
+output_phafile_basename=`basename ${output_phafile}`
+exposure=`exposure.sh ${output_phafile_basename}`
+exposure10times=`calc $exposure*10`
+exposure200times=`calc $exposure*200`
+tmp=`basename ${output_phafile_basename} .pi`
+tmp=`basename $tmp .pha`
+cp ${output_phafile_basename} ${tmp}_times10.pi
+cp ${output_phafile_basename} ${tmp}_times200.pi
+exposure.sh ${tmp}_times10.pi $exposure10times 2>&1 | tee -a `basename $logfile`
+exposure.sh ${tmp}_times200.pi $exposure200times 2>&1 | tee -a `basename $logfile`
+cd -
+fi
+
+#log
+cat << EOL >> ${output_phafile}.log
+
+
+rm -f $output_phafile
+xselect << EOF
+
+read event $event_file ./
+$filter_gti
+$condition
+extract spec
+save spec $output_phafile
+n
+
+exit
+no
+
+EOF
+EOL

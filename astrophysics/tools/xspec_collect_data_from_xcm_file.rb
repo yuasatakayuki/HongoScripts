@@ -1,0 +1,70 @@
+#!/usr/bin/env ruby
+
+#20100312 Takayuki Yuasa
+
+require "fileutils"
+
+if(ARGV.length<2)then
+print "xspec_collect_data_from_xcm_file.rb (xcm file) (output folder name)\n"
+exit
+end
+
+input_xcmfile=ARGV[0]
+output_foldername=ARGV[1]
+SavedXCMFolder="xcm"
+SavedDataFolder="data"
+SavedXCMFile="load.xcm"
+
+keywords=["data","response","arf","backgrnd","corfile"]
+
+files_from=[]
+files_to=[]
+currentdir=["./"]
+
+if(!File.exist?(output_foldername))then
+ Dir::mkdir(output_foldername)
+end
+
+if(!File.exist?("#{output_foldername}/#{SavedDataFolder}"))then
+ Dir::mkdir("#{output_foldername}/#{SavedDataFolder}")
+end
+
+if(!File.exist?("#{output_foldername}/#{SavedXCMFolder}"))then
+ Dir::mkdir("#{output_foldername}/#{SavedXCMFolder}")
+end
+
+print "creating an xcm file for loading data...\n"
+outputfile=File.open("#{output_foldername}/#{SavedXCMFolder}/#{SavedXCMFile}",'w')
+
+open(input_xcmfile).each { |line|
+	printed=false
+	if(line.index("cd ")==0)then
+		currentdir.push(line.split(" ")[-1]+"/")
+		printed=true
+	end
+	keywords.each {|keyword|
+		if(line.index(keyword)==0)then
+			linearray=line.split(" ")
+			file=currentdir[-1]+linearray[2]
+			files_from.push(file)
+			basename=File.basename(file)
+			files_to.push("#{output_foldername}/#{SavedDataFolder}/#{basename}")
+			outputfile.puts("#{linearray[0]} #{linearray[1]} #{SavedDataFolder}/#{basename}")
+			printed=true
+		end
+	}
+	if(printed==false)then
+		outputfile.puts(line)
+	end
+}
+
+
+print "copying data...\n"
+for i in 0...files_from.length do
+print " copying #{files_to[i]}...\n"
+FileUtils.cp(files_from[i],files_to[i])
+end
+
+print "done\n"
+
+outputfile.close()

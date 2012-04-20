@@ -1,0 +1,32 @@
+#!/bin/bash
+
+#20090507 Shin'ya Yamada
+
+
+pwd=`pwd`
+dir=`basename $pwd`
+if [ $dir != bgd ];
+then
+echo "please run this script in bgd folder."
+exit
+fi
+
+gsoevtfile=`ls ../?????????/hxd/event_cl/ae*hxd_0_gsono_cl.evt* 2> /dev/null`
+
+
+if [ _$gsoevtfile = _ ];
+then
+echo "GSO cleaned event file was not found!, exiting..."
+exit
+else
+echo "found $gsoevtfile"
+fi
+
+echo "AAAAAAAAAAAAAAAAAAA"
+echo $gsoevtfile
+ls $gsoevtfile
+echo "AAAAAAAAAAAAAAAAAAA"
+
+wget -nv `gso_find_nxbfile.sh $gsoevtfile`
+gzip -d -f *.gz
+

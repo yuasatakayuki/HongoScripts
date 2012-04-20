@@ -1,0 +1,39 @@
+ 12 Windows in this < Xronos Window File >
+ 0 Time Wind.: start       stop  (days)
+ 0 Phase Wind.: epoch  period  (days)/ start stop (0->1) phases    max   10
+ 0 Ints. Wind. for Orig. Bins in Series 1 : min  max (c/s)         max   10
+ 0 Ints. Wind. for New Bins   in Series 1 : min  max (c/s)         max   10
+ 0 Ints. Wind. for Intervals  in Series 1 : min  max (c/s)         max   10
+ 1 Exps. Wind. for Orig. Bins in Series 1 : min  max (0->50)       max    1
+     0.00		50.0     1
+ 1 Exps. Wind. for New Bins   in Series 1 : min  max (0->50)       max    1
+     0.00		50.0     1
+ 1 Exps. Wind. for Intervals  in Series 1 : min  max (0->50)       max    1
+     0.0		50.0     1
+ 0 Ints. Wind. for Orig. Bins in Series 2 : min  max (c/s)         max   10
+ 0 Ints. Wind. for New Bins   in Series 2 : min  max (c/s)         max   10
+ 0 Ints. Wind. for Intervals  in Series 2 : min  max (c/s)         max   10
+ 1 Exps. Wind. for Orig. Bins in Series 2 : min  max (0->50)       max    1
+     0.00		50.0     1
+ 1 Exps. Wind. for New Bins   in Series 2 : min  max (0->50)       max    1
+     0.00		50.0     1
+ 1 Exps. Wind. for Intervals  in Series 2 : min  max (0->50)       max    1
+     0.0		50.0     1
+ 0 Ints. Wind. for Orig. Bins in Series 3 : min  max (c/s)         max   10
+ 0 Ints. Wind. for New Bins   in Series 3 : min  max (c/s)         max   10
+ 0 Ints. Wind. for Intervals  in Series 3 : min  max (c/s)         max   10
+ 1 Exps. Wind. for Orig. Bins in Series 3 : min  max (0->50)       max    1
+     0.00		50.0     1
+ 1 Exps. Wind. for New Bins   in Series 3 : min  max (0->50)       max    1
+     0.00		50.0     1
+ 1 Exps. Wind. for Intervals  in Series 3 : min  max (0->50)       max    1
+     0.0		50.0     1
+ 0 Ints. Wind. for Orig. Bins in Series 4 : min  max (c/s)         max   10
+ 0 Ints. Wind. for New Bins   in Series 4 : min  max (c/s)         max   10
+ 0 Ints. Wind. for Intervals  in Series 4 : min  max (c/s)         max   10
+ 1 Exps. Wind. for Orig. Bins in Series 4 : min  max (0->50)       max    1
+     0.00		50.0     1
+ 1 Exps. Wind. for New Bins   in Series 4 : min  max (0->50)       max    1
+     0.00		50.0     1
+ 1 Exps. Wind. for Intervals  in Series 4 : min  max (0->50)       max    1
+     0.0		50.0     1

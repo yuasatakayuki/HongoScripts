@@ -1,0 +1,30 @@
+#!/bin/bash
+
+#20100803 Takayuki Yuasa
+#20110122 Takayuki Yuasa modified to use new getheader.sh
+
+if [ _$1 = _ ]; then
+cat << EOF 1>&2
+usage : `basename $0` (fits file) (keyword)
+
+This script returns the index of the HDU which contains the
+provided keyword. The first match is returned. When no HDU
+contains the keyword, nothing will be returned.
+EOF
+exit -1
+fi
+
+file=$1
+if [ ! -f $file ]; then
+exit
+fi
+keyword=`ruby -e "print '$2'.upcase"`
+
+for n in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+line=""
+line=`getheader.sh $file $n $keyword`
+if [ _$line != _ ]; then
+echo $n
+exit
+fi
+done

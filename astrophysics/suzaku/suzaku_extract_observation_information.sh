@@ -1,0 +1,77 @@
+#!/bin/bash
+
+#20090608 Takayuki Yuasa
+#20090609 Takayuki Yuasa added Obs ID
+#20090709 Takayuki Yuasa file check before execution
+
+#this script creates a tex files which summarise observation information for
+#an input fits files.
+
+if [ _$2 = _ ];
+then
+echo "usage : suzaku_extract_observation_information.sh (suzaku evt file) (output tex file name)"
+exit
+fi
+
+file=$1
+outfile=$2
+
+if [ ! -f $file ];
+then
+echo "input file not found...exit"
+exit
+fi
+
+target=`getheader.sh $file 1 object`
+dateobs=`getheader.sh $file 1 date-obs | sed -e "s/T/ /g"`
+obsid=`obs_id.sh $file`
+ontime=`getheader.sh $file 1 ontime`
+ontimeks=`calc "int($ontime/100)*100/1000"`
+observer=`getheader.sh $file 1 observer`
+ra=`getheader.sh $file 1 ra_obj`
+dec=`getheader.sh $file 1 dec_obj`
+ea1=`getheader.sh $file 1 mean_ea1`
+ea2=`getheader.sh $file 1 mean_ea2`
+ea3=`getheader.sh $file 1 mean_ea3`
+
+
+gal=`ftcoco none none R G $ra $dec chatter=2`
+l=`echo $gal | awk '{print $1}'`
+b=`echo $gal | awk '{print $2}'`
+
+ra=`calc "int($ra*100)/100"`
+dec=`calc "int($dec*100)/100"`
+l=`calc "int($l*100)/100"`
+b=`calc "int($b*100)/100"`
+
+
+cat << EOF > $outfile
+\\documentclass[a4paper]{article}
+\\renewcommand{\\arraystretch}{1.5}
+\\pagestyle{empty}
+\\begin{document}
+\\begin{center}
+\\huge{
+Observation Information\\
+\\begin{table}[htb]
+\\begin{center}
+\\huge{
+\\begin{tabular}{ll}
+\\hline
+Target & $target\\\\
+Date & $dateobs\\\\
+Obs ID & $obsid\\\\
+Exposure & $ontimeks ks\\\\
+PI & $observer\\\\
+(RA,DEC) & ($ra,$dec)\\\\
+(L,B) & ($l,$b)\\\\
+\\hline
+\\end{tabular}
+}
+\\end{center}
+\\end{table}
+}
+\\end{center}
+\\end{document}
+EOF
+

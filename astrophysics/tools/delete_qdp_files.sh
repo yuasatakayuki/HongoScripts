@@ -1,0 +1,23 @@
+#!/bin/bash
+
+#20090306 Takayuki Yuasa
+#20100125 Takayuki Yuasa expr substr abandoned
+
+#this script deletes given qdp file.
+#if qdp shortens the filename becase it is too long,
+#this script also taken into account the shortening.
+
+if [ _$1 = _ ];
+then
+echo "delete_qdp_files.sh QDP_FILENAME(.qdp or .pco)"
+exit
+fi
+
+qdpfile=$1
+rm -f $qdpfile ${qdpfile}.pco ${qdpfile}.qdp
+
+tmp=`basename $qdpfile .qdp`
+tmp=`basename $tmp .pco`
+tmp=`dirname $qdpfile`/$tmp
+shortqdpfile="${tmp:0:72}"
+rm -f ${shortqdpfile} ${shortqdpfile}.pco ${shortqdpfile}.qdp

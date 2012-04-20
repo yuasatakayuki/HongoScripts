@@ -1,0 +1,5 @@
+#!/bin/bash
+
+#20081127 Takayuki Yuasa
+
+nano `which $1`

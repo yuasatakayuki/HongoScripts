@@ -1,0 +1,67 @@
+#!/bin/bash
+
+#xis_extract_raw_images.sh
+#20090313 Takayuki Yuasa
+#20091023 Takayuki Yuasa show filter added
+#20100721 Takayuki Yuasa pixel quality selection changed (0:1023 => 0:524287)
+
+if [ _$3 = _ ];
+then
+echo "xis_extract_filtered_spectrum.sh (input event file) (output spectrum file) (region file) (extra condition file;optional)"
+exit
+fi
+
+pwd=`pwd`
+indexof=`indexof.pl "$pwd" "xis/spectral_analysis"`
+if [ $indexof == -1 ];
+then
+echo "run this script at analysis/xis/spectral_analysis/ folder."
+exit
+fi
+
+evtfile=$1
+outputdir=`dirname $2`
+outputfile=`basename $2`
+regionfile=$3
+
+mkdir -p $outputdir
+
+if [ _$4 = _ ];
+then
+extra=""
+else
+extra=`cat $4`
+fi
+
+logfile=$outputdir/${outputfile}.log
+
+rm -f $outputdir/$outputfile
+
+xselect << EOF 2>&1 | tee -a $logfile
+
+no
+read event $evtfile ./
+
+filter region $regionfile
+filter column "status=0:65535 131072:196607 262144:327679 393216:458751"
+$extra
+
+show filter
+
+extract spec
+save spec $outputdir/$outputfile
+no
+
+exit
+
+
+EOF
+
+#binning
+cd $outputdir
+groupmin "$outputfile" 20 | tee -a `basename $logfile`
+groupmin "$outputfile" 40 | tee -a `basename $logfile`
+groupmin "$outputfile" 60 | tee -a `basename $logfile`
+groupmin "$outputfile" 80 | tee -a `basename $logfile`
+cd - &> /dev/null
+

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#20080716 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo "give infilename, group min N, and outfilename(optional)"
+exit
+fi
+
+infile=$1
+n=$2
+
+case "$infile" in
+ *pi ) prefix=.pi ;;
+ *pha ) prefix=.pha ;;
+esac
+
+if [ _$3 = _ ];
+then
+outfile=`basename $infile $prefix`_bin${n}$prefix
+else
+outfile=$3
+fi
+
+rm $outfile &> /dev/null
+
+grppha << EOF
+$1
+$outfile
+group min $n
+exit
+EOF

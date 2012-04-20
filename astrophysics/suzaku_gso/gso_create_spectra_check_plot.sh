@@ -1,0 +1,104 @@
+#!/bin/bash
+
+#20090511 S. Yamada
+#20090526 Takayuki Yuasa cpd deleted (xspec no window mode)
+#20100115 Takayuki Yuasa argument problem fixed
+#20100728 Takayuki Yuasa "screen white" was added for qdp
+#create an xcm file that reads GSO pi file, NXB file, responses, and then
+#cpd /xw, setplot energy, ignore 1-30:**-50. 520.-**
+
+if [ _$6 = _ ];
+then
+cat << EOF
+usage:
+gso_create_spectra_check_plot.sh (spectrum file) (nxb file) (1% of nxb file or 'none') (response file) (output pdf filename) (arf file; or none) (additional qdp command fil;optional)
+Example:
+gso_create_spectra_check_plot.sh \\
+    pis/20090304/gso_evt_gti_evt_nxb_merged_bin100.pi \\
+    pis/20090304/gso_nxb_gti_evt_nxb_merged.pi \\
+    pis/20090304/gso_nxb_gti_evt_nxb_merged_times100.pi \\
+    /net/xdata/astro/caldb/data/suzaku/hxd/cpf//ae_hxd_gsoxinom_20080129.rsp \\
+    plots/20090304/gso_evt_gti_evt_nxb_merged_binGSO.pdf \\
+    ./arfs/ae_hxd_gso*.arf \\
+EOF
+exit
+fi
+
+#parameter set
+evtpi=$1
+nxbpi=$2
+if [ $3 = none ];
+then
+nxb1perpi=""
+else
+nxb1perpi=$3
+fi
+response=$4
+outputpdf=$5
+outputps=`dirname $5`/`basename $5 .pdf`.ps
+outputxcm=`dirname $5`/`basename $5 .pdf`.xcm
+outputplotxcm=`dirname $5`/`basename $5 .pdf`_plot.xcm
+outputqdp=`dirname $5`/`basename $5 .pdf`.qdp
+outputpco=`dirname $5`/`basename $5 .pdf`.pco
+output=`dirname $5`/`basename $5 .pdf`
+logfile=${5}.log
+arf=$6
+additionalqdp=$7
+
+target=`targetname.sh $evtpi`
+
+#xspec nowindow mode
+export PGPLOT_TYPE=""
+
+#create folder
+mkdir -p `dirname $outputpdf`
+
+#create xcm
+gso_create_xcm_for.sh $evtpi $nxbpi $response $outputxcm $arf $nxb1perpi 
+evtexposure=`exposure.sh $evtpi`
+evtexposure=`calc $evtexposure/1000`
+nxbexposure=`exposure.sh $nxbpi`
+nxbexposure=`calc $nxbexposure/1000`
+
+rm -f $outputpco $outputqdp
+cat << EOF > $outputplotxcm
+@$outputxcm
+
+iplot
+ti off
+cs 1.3
+lwidth 3
+lwidth 3 on 1..50
+la t
+la f $target
+la y Counts s\u-1\d keV\u-1
+la x Energy keV
+la ox All=$evtexposure ks NXB=$nxbexposure ks
+fo ro
+
+EOF
+
+if [ _$additionalqdp != _ ];
+then
+cat $additionalqdp >> $outputplotxcm
+fi
+
+cat << EOF >> $outputplotxcm
+scr white
+hard $outputps/cps
+we $output
+exit
+
+exit
+yes
+
+EOF
+
+xspec < $outputplotxcm 2>&1 | tee $logfile
+
+#ps2pdf
+echo "ps2pdf"
+echo "cd `dirname $outputpdf`"
+cd `dirname $outputpdf`
+ps2pdf `basename $outputps`
+cd -

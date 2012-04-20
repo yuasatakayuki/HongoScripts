@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#20091219 Takayuki Yuasa
+
+if [ _$5 = _ ];
+then
+echo "pin_create_auxiliary_response_file_for_pointsource.sh (spectrum file) (attitude file) (target RA) (target Dec) (output directory)"
+echo "Output ARF file will be saved as (output directory)/offaxis_pin.arf"
+exit
+fi
+
+#parameters
+infile=$1
+attitudefile=$2
+ra=$3
+dec=$4
+outputdir=$5
+
+outputprefix=$outputdir/offaxis
+outputfile=${outputprefix}_pin.arf
+
+#execute hxdarfgen
+rm -f $outputfile
+
+hxdarfgen \
+$outputprefix \
+hxd_arf_pinid=64 hxd_arf_gsoid=17 \
+hxd_teldef=CALDB \
+attitude=$attitudefile \
+hxd_arfdb_name=CALDB \
+input_pi_name=$infile \
+point_ra=$ra point_dec=$dec 
+

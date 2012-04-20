@@ -1,0 +1,47 @@
+#!/bin/sh 
+
+#20100124 Takayuki Yuasa modified CALDB-related environmental variable check
+#20100125 Takayuki Yuasa modified CALDB-related environmental variable check again
+
+# reprocess HXD unscreened files
+# must be done in event_uf_repro/
+
+#check CALDB environment variables
+suzaku_check_caldb_variables.sh
+if [ $? != 0 ];
+then
+echo "exit..."
+exit
+fi
+
+rm -f hk_file.list
+touch hk_file.list
+ls ../hk/ae*hxd*hk >> hk_file.list
+ls ../../auxil/ae*ehk >> hk_file.list
+
+
+for ufevt in `ls ../event_uf/ae*hxd_*wel_uf.evt`
+do
+
+
+orgfile=`basename $ufevt`
+outputprefix=`basename $ufevt .evt`_hxdpi
+outputfile=${outputprefix}.evt
+
+echo "================  $ufevt  --->>>>>> $outputfile ============="
+hxdpi input_name="$ufevt" read_iomode=create \
+create_name=${outputfile} hklist_name="@hk_file.list" \
+hxd_gsoght_fname=CALDB hxd_gsolin_fname=CALDB \
+hxd_pinghf_fname=CALDB hxd_pinlin_fname=CALDB  2>&1 | tee -a  ${outputprefix}_$$.log 
+
+
+outputprefix=`basename $ufevt .evt`_hxdgrade
+
+hxdgrade input_name="${outputfile}" hxdgrade_psdsel_fname=CALDB  hxdgrade_pinthres_fname=CALDB leapfile=leapsec.fits >&1 | tee -a ${outputprefix}_$$.log 
+
+
+mv ${outputfile} ${orgfile}
+
+
+done
+

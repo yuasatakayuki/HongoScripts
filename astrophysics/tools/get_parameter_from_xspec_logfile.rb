@@ -1,0 +1,170 @@
+#!/usr/bin/env ruby
+
+#20090420 Takayuki Yuasa
+#20100222 Takayuki Yuasa xspec12 support
+#20100302 Takayuki Yuasa error only option added
+
+#Usage
+#
+#arguments
+#0 log file
+#1 component number
+#2 Parameter name (e.g. kT, norm)
+#3 true if error should be also retrieved
+#4 effective digits(optional)
+#5 errp or errn (optional) for error only output
+
+if(ARGV.length<3)then
+print "usage : get_parameter_from_xspec_logfile.rb (xspec logfile name) (model component number) (model parameter name) (true if error is also needed) (effective digits;optional) (errp or errn for error only output;optional)\n"
+exit
+end
+
+if(ARGV.length>=5)then
+effectivedigits=ARGV[4]
+else
+effectivedigits=0
+end
+
+if(ARGV.length>=6)then
+erroronly=ARGV[5]
+else
+erroronly=""
+end
+
+splitting_str1="---------------------------------------------------------------------------"
+splitting_str2="---------------------------------------------------------------------------"
+
+#xspec12 starting splitter
+splitting_str3="========================================================================" 
+#xspec12 ending splitter
+splitting_str4="________________________________________________________________________" 
+
+xspec12mode=false
+
+array=[]
+startflag=0
+started=false
+errorstarted=false
+hashkey=0
+hash={}
+lines=[]
+logfile=File::open(ARGV[0]) { |f|
+ f.each { |line|
+ 
+  #delete top # (xspec12)
+  if(line.slice(0,1)=="#")then #xspec12 support
+  	line=line.slice(1,line.length-1)
+  	xspec12mode=true
+  end
+  
+  #fitting parameter table related
+  if(startflag==2)then
+   started=true
+   array.push(line)
+  end
+
+  if( (startflag==0 or startflag==1) and (line.include?(splitting_str1)) )then#xspec11
+   startflag+=1
+  end
+  if(line.include?(splitting_str3))then #xspec12
+   startflag=2
+  end
+  if(started==true and (line.include?(splitting_str2) or line.include?(splitting_str4)) )then
+   array.pop
+   startflag=-1
+   started=false
+  end
+  
+  #error related
+  if(errorstarted==true and line.include?("(") and line.include?(")") and line.include?(",") )then
+  	lines.push(line)
+  	hash[hashkey.to_s]=lines
+  	errorstarted=false
+  end
+
+  if(startflag==-1 and errorstarted==false and line.include?(">") and line.include?("err") and !line.include?("#err") )then
+   errorstarted=true
+   hashkey=line.split(" ")[-1]
+   lines=[]
+  end
+  
+  if(errorstarted==true)then
+  	lines.push(line)
+  end
+ }
+}
+
+array=array[3..array.length]
+
+#split into components
+value=0
+parameternumber=-1
+array.each {|line|
+ linearray=line.split(" ")
+ if(xspec12mode)then
+  componentnumber=linearray[1]
+  parametername=linearray[3]
+ else
+  #xspec11
+  componentnumber=linearray[2]
+  parametername=linearray[4]
+ end
+# p "#{componentnumber} #{parametername}"
+ if(componentnumber=="#{ARGV[1]}" and parametername=="#{ARGV[2]}")then
+  if(parameternumber==-1)then
+   parameternumber=linearray[0]
+  end
+  if(line.include?("+/-"))then
+   #i.e. not frozen
+   value=linearray[linearray.index("+/-")-1]
+  elsif(line.include?("frozen"))then
+   #i.e. frozen
+   value=linearray[linearray.index("frozen")-1]
+  else
+   #i.e. tied with other one
+   value=linearray[linearray.index("=")-1]  	
+  end
+ end
+}
+
+
+if(ARGV.length>3 and ARGV[3]=="true")then
+ #p "parameter number : #{parameternumber}"
+ if(hash.key?(parameternumber.to_s()))then
+  line=hash.fetch(parameternumber.to_s())[-1]
+  line=line.gsub(','," ")
+  line=line.gsub('('," ")
+  line=line.gsub(')'," ")
+  errorm=line.split(" ")[-2]
+  errorp=line.split(" ")[-1]
+  if(effectivedigits!=0)then
+   if(erroronly=="errp")then
+    print format("%.#{effectivedigits}G",errorp)
+   elsif(erroronly=="errm")then
+    print format("%.#{effectivedigits}G",errorm)
+   else
+    print format("%.#{effectivedigits}G",value)
+    print "^{+"
+    print format("%.#{effectivedigits}G",errorp)
+    print "}_{"
+    print format("%.#{effectivedigits}G",errorm)
+    print "}"
+   end
+  else
+   print "#{value}^{+#{errorp}}_{#{errorm}}"
+  end
+ else
+  if(effectivedigits!=0)then
+   print format("%.#{effectivedigits}G",value)
+  else
+   print "#{value}"
+  end
+ end
+ exit 
+end
+
+if(effectivedigits!=0)then
+print format("%.#{effectivedigits}G",value);
+else
+print "#{value}"
+end
