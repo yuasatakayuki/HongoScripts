@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #20090305 Takayuki Yuasa
+#20120523 Takayuki Yuasa support for epoch 0
 
 #This script finds appropriate response
 #file for a PIN spectrum from CALDB automatically.
@@ -10,7 +11,7 @@
 
 if [ _$2 = _ ];
 then
-echo "usage : pin_find_responsefile.sh (nominal position:hxd/xis) (epoch:1-6)"
+echo "usage : pin_find_responsefile.sh (nominal position:hxd/xis) (epoch:0-10)"
 exit
 fi
 
@@ -36,7 +37,12 @@ nom=xinom
 fi
 
 hxdcpf=${CALDB}/data/suzaku/hxd/cpf/
+if [ $epoch = 0 ]; then
+response=`ls $hxdcpf/ae_hxd_pin${nom}_*.rsp | tail -1`
+else
 response=`ls $hxdcpf/ae_hxd_pin${nom}e${epoch}*rsp | tail -1`
+fi
+
 
 if [ ! -f $response ];
 then
