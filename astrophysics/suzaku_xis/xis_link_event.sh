@@ -48,6 +48,7 @@ evt2x2=`ls event_cl/ae*xi${n}*2x2*_cl.evt 2> /dev/null | tail -1`
 
 #a temp file containing a list of event files (3x3 and 5x5)
 tmp=`get_hash_random.pl`
+touch $tmp
 
 #5x5 mode
 if [ _$evt5x5 != _ ];
