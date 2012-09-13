@@ -24,7 +24,7 @@ ln -sf $event_uf
 ln -sf $hxdhk hxdhk
 ln -sf $auxil
 
-for dir in event_cl event_uf hxdhk auxil;
+for dir in event_cl hxdhk auxil;
 do
 
 cd $dir

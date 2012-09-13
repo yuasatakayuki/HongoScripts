@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #################################################################
 # Read header information from the given FITS header and print  #
@@ -25,8 +25,10 @@ sh="/bin/sh"
 #sh="${cat}"     # For debugging purpose.
 #
 awk="/usr/bin/awk"
-grep="/bin/egrep"
-sed="/bin/sed"
+#grep="/bin/egrep"
+grep=`which egrep`
+#sed="/bin/sed"
+sed=`which sed`
 
 if [ "${HEADAS}"x = ""x ] ; then
     echo "This script requires HEADAS to be ready."

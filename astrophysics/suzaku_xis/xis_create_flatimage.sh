@@ -24,7 +24,7 @@ Please set XIS_CREATE_FLATIMAGE_SH_REUSE_FILES
 environmental variable to "yes" to speed up calculation
 using existing files. For example,
 
-fexport XIS_CREATE_FLATIMAGE_SH_REUSE_FILES=yes
+export XIS_CREATE_FLATIMAGE_SH_REUSE_FILES=yes
 export XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES=yes
 export XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES_FROM=(path to flatimages/)
 
@@ -223,12 +223,25 @@ xisexpmapgen $exposuremap $eventfile $attfile  &> /dev/null
 
 rm -f $binnedexposuremap
 fimgbin "$exposuremap[1]" $binnedexposuremap $binning
+if [ ! -f $binnedexposuremap ]; then
+ echo "Error while creating 'binned exposure map'..."
+ exit -1
+fi
 
 rm -f $trimmask
 exposure=`exposure.sh $eventfile`
-thresholdlo=`perl -e "print 0.8*$exposure*$binning*$binning"`
-thresholdup=`perl -e "print 0.8*$exposure*$binning*$binning+1"`
+thresholdlo=`perl -e "print int(0.8*$exposure*$binning*$binning)"`
+thresholdup=`perl -e "print int(0.8*$exposure*$binning*$binning+1)"`
+echo "thresholdlo=$thresholdlo"
+echo "thresholdup=$thresholdup"
+cat << EOF
 fimgtrim infile="${binnedexposuremap}[1]" threshlo=$thresholdlo threshup=$thresholdup const_lo=0 const_up=1 outfile=$trimmask
+EOF
+fimgtrim infile="${binnedexposuremap}[1]" threshlo=$thresholdlo threshup=$thresholdup const_lo=0 const_up=1 outfile=$trimmask
+if [ ! -f $trimmask ]; then
+echo "Error while creating a trim mask..."
+exit
+fi
 
 #trim exposure map with trim mask
 tmp=`get_hash_random.pl`

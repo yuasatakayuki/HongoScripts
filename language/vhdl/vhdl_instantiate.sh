@@ -30,6 +30,9 @@ connections=[]
 componentname=""
 open("$file").each {|line|
  head=line.split(" ")[0]
+ if(head==nil)then
+  next
+ end
  if(flag==true and (!head.include?("--")) and (!head.include?(")")) and (!head.include?("end")) )then
   a=line.split(" ")[0].split(":")
   connections.push("#{a[0]} => #{a[0]},")
