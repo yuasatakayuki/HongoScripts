@@ -1,10 +1,11 @@
-#!/usr/bin/env perl
+#!/usr/bin/env ruby
 
 #20090304 Takayuki Yuasa
 #20100124 perl path fixed
+#20120828 changed to ruby
 
-use Digest::SHA1 qw(sha1_hex);
+require 'digest/sha2'
 
-if(@ARGV!=0){
-print sha1_hex($ARGV[0])."\n";
-}
+if(ARGV.length!=0)then
+print Digest::SHA256.hexdigest(ARGV[0])[0..5]
+end
