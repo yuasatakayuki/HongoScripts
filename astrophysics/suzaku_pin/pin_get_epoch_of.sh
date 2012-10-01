@@ -49,29 +49,56 @@ echo "$file $missiontime" >> $tmpfile
 done
 
 
+#ruby << EOF
+#t=0
+#finish=false
+#epoch=1
+#open("$tmpfile").each {|line|
+# a=line.split(" ")
+# f=a[0]
+# if(f!=nil)then
+#  e=f.split("_")[-2].split("e")[-1]
+#  t=a[1].to_f()
+#  if(t>$tstart and finish==false)then
+#   epoch=e.to_i()-1
+#   finish=true
+#  end
+# end
+#  if(finish==false)then
+#   epoch=e.to_i()
+#  end
+#}
+#print epoch
+#EOF
+
 ruby << EOF
-t=0
-finish=false
-epoch=1
+currentmaxt=-1.0
+epoch=-1
+maxepoch=-1
 open("$tmpfile").each {|line|
  a=line.split(" ")
  f=a[0]
  if(f!=nil)then
   e=f.split("_")[-2].split("e")[-1]
   t=a[1].to_f()
-  if(t>$tstart and finish==false)then
-   epoch=e.to_i()-1
-   finish=true
+  if (e.to_i() > maxepoch) then
+    maxepoch = e.to_i()
+  end
+  if (t<$tstart and t > currentmaxt) then
+    epoch=e.to_i()
+    currentmaxt=t
   end
  end
-  if(finish==false)then
-   epoch=e.to_i()
-  end
 }
+if (epoch < 0) then
+  epoch = maxepoch
+end
 
 print epoch
 
 EOF
+
+
 
 
 rm -f $tmpfile
