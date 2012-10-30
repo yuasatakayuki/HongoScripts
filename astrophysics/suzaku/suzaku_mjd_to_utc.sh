@@ -18,4 +18,4 @@ mjd
 $1
 EOF
 
-pget aetimecalc utc
+pget aetimecalc date
