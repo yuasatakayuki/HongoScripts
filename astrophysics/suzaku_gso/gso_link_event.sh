@@ -4,7 +4,7 @@
 #20090304 Shin'ya Yamada
 #20090511 Takayuki Yuasa unzipping before reprocess
 #20100121 Takayuki Yuasa link to cleaned event fixed according to Shinya Yamada's comment
-
+#20120928 Soki Sakurai modified arguments to aepipeline
 
 if [ _$1 = _ ];
 then
@@ -65,9 +65,11 @@ ln -fs ../hk/*.gti .
 ls 
 cd ..
 
-
-aepipeline indir=event_uf outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO chatter=3 clobber=yes hxdpi_old=no attitude=./auxil/ae${obsid}.att housekeeping=./auxil/ae${obsid}.hk extended_housekeeping=./auxil/ae${obsid}.ehk makefilter=./auxil/ae${obsid}.mkf orbit=./auxil/ae${obsid}.orb timfile=./auxil/ae${obsid}.tim
-
+#aepipeline indir=event_uf outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO chatter=3 clobber=yes hxdpi_old=no attitude=./auxil/ae${obsid}.att housekeeping=./auxil/ae${obsid}.hk extended_housekeeping=./auxil/ae${obsid}.ehk makefilter=./auxil/ae${obsid}.mkf orbit=./auxil/ae${obsid}.orb timfile=./auxil/ae${obsid}.tim
+currentdir=`pwd`
+cd $1/../
+aepipeline indir=$obsid outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO clobber=yes
+cd $currentdir
 
 ##check if uff_0 exists
 #uff_0=`ls event_uf_repro/ae*hxd_0_wel_uf*`
