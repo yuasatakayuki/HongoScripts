@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 #20101111 Takayuki Yuasa
+#20130429 Takayuki Yuasa added support for parallelized error estimation (e.g. error 1 2 3)
 
 if(ARGV.length<3)then
 puts <<EOS
@@ -41,11 +42,11 @@ open(logfile).each{|line|
  line=line.gsub("#","")
  a=line.split(" ")
  if(a[1]!=nil and a[3]!=nil)then
- if(a[1].to_i==ncomp and a[3]==pname)then
-  npara=a[0].to_i
-  paravalue=a[-3]
-  #puts "Nparameter=#{npara}"
- end
+	 if(npara==0 and a[1].to_i==ncomp and a[3]==pname)then
+	  npara=a[0].to_i
+	  paravalue=a[-3]
+	  #puts "Nparameter=#{npara}"
+	 end
  end
  if(line.include?("XSPEC") and line.include?(">") and line.include?("err"))then
   errorcommands.push(i)
@@ -70,8 +71,10 @@ for i in 0...errorcommands.length do
  end
  errcommand=lines[errorcommands[i]]
  a=errcommand.split(" ")
- nerrpara=a[-1].to_i
- blocks[nerrpara]=lines[from..to]
+ for p in 1...a.length do
+	 nerrpara=a[p].to_i
+	 blocks[nerrpara]=lines[from..to]
+ end
 end
 
 block=blocks[npara]
@@ -82,6 +85,7 @@ block.each{|line|
  line=line.gsub(")"," ")
  line=line.gsub("("," ")
  a=line.split(" ")
+ #puts line
  if(a[0].to_i==npara)then
   if(err=="errp")then
    puts format % a[-1]
@@ -101,7 +105,7 @@ block.each{|line|
    end
   elsif(err=="value_errM_errP")then
    if(a[-4]!=nil and a[-3]!=nil)then
-    puts "#{format % paravalue}(#{format_plus % a[-4]}-#{format % a[-3]})"
+    puts "#{format % paravalue}(#{(format_plus % a[-4]).gsub("+","")}-#{(format % a[-3]).gsub("+","")})"
    end
   end
  end
