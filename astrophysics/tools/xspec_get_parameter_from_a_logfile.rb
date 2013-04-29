@@ -12,7 +12,7 @@ end
 
 logfile=ARGV[0]
 if(!File.exist?(logfile))then
-$STDERR.puts "File not found..."
+puts "File not found..."
 exit
 end
 
@@ -56,7 +56,7 @@ open(logfile).each{|line|
 }
 
 if(err=="value")then
-puts paravalue
+puts format % paravalue
 exit
 end
 
@@ -73,7 +73,10 @@ for i in 0...errorcommands.length do
  a=errcommand.split(" ")
  for p in 1...a.length do
 	 nerrpara=a[p].to_i
-	 blocks[nerrpara]=lines[from..to]
+	 if(nerrpara!=0)then
+		 #puts nerrpara
+		 blocks[nerrpara]=lines[from..to]
+	 end
  end
 end
 
@@ -99,7 +102,7 @@ block.each{|line|
    if(a[-3]!=nil)then
     puts format % a[-3]
    end
-  elsif(err=="errm")then
+  elsif(err=="errM")then
    if(a[-4]!=nil)then
     puts format % a[-4]
    end
