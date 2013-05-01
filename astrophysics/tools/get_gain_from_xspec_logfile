@@ -1,0 +1,61 @@
+#!/bin/bash
+
+#20090928 Takayuki Yuasa
+#20090929 Takayuki Yuasa bug fix
+#20100222 Takayuki Yuasa for xspec12 log
+#20130501 Takayuki Yuasa for gain fit
+
+#Usage
+#
+#arguments
+#0 log file
+#1 data set number
+#2 slope/offset (optional; default= slope)
+#3 Ruby-like number format 
+
+if [ _$2 = _ ]; then
+cat << EOF
+usage : get_gain_from_xspec_logfile (xspec logfile name) (data set number) (slope/offset; optional; default= slope) (Ruby-like number format; optional; e.g. "%.3f")
+EOF
+exit
+fi
+
+if [ ! -f $1 ]; then
+echo "Error: file not found"
+exit
+fi
+file=$1
+dataSetNumber=$2
+
+type="slope"
+if [ _$3 != _ ]; then
+type=$3
+fi
+
+if [ $type != "slope" -a $type != "offset" ]; then
+echo "Error: type should be either of slope or offset."
+exit
+fi
+
+format="%f"
+if [ _$4 != _ ]; then
+format=$4
+fi
+
+
+#---------------------------------------------
+ruby << EOF
+str="`grep gain $file`"
+str=str.gsub("#","")
+str=str.gsub("_t"," ")
+str.each(){|line|
+	a=line.split(" ")
+	dataSetNumber_=a[1].to_i
+	type_=a[3]
+	value=a[4].to_f
+	if(dataSetNumber_==${dataSetNumber} and type_="${type}")then
+		print "${format}" % value
+		exit
+	end
+}
+EOF
