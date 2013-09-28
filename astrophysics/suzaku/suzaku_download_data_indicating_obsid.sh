@@ -22,5 +22,5 @@ local=./
 option="-nv -m --passive-ftp -nH --cut-dirs=3 -P $local"
 obsid=$1
 
-wget $option "ftp://ftp.darts.isas.jaxa.jp/pub/suzaku/ver${version}/$obsid/"
+wget $option "http://darts.isas.jaxa.jp/pub/suzaku/ver${version}/$obsid/"
 
