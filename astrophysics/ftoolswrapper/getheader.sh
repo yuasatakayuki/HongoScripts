@@ -25,7 +25,9 @@ if(str.include?("'"))then
 	a=str.split("'")
 	print a[1].strip
 else
-	#number etc
-	print str.split("=")[1].split("/")[0].strip
+	if(str.include?("="))then
+		#number etc
+		print str.split("=")[1].split("/")[0].strip
+	end
 end
 EOF

@@ -146,7 +146,7 @@ no
 read event @$tmp ./
 extract event
 save event fi_evt.evt
-
+y
 exit
 
 
