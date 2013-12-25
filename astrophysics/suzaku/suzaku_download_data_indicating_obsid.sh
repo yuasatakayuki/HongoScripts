@@ -19,8 +19,8 @@ version=$DEFAULT_VERSION
 fi
 
 local=./
-option="-nv -m --passive-ftp -nH --cut-dirs=3 -P $local"
+option='-nv -m -np -nH --cut-dirs=3 -P .'
 obsid=$1
 
-wget $option "http://darts.isas.jaxa.jp/pub/suzaku/ver${version}/$obsid/"
+wget $option -R 'index.html*' "http://darts.isas.jaxa.jp/pub/suzaku/ver${version}/$obsid/"
 
