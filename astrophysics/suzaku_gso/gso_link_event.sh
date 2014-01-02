@@ -65,11 +65,45 @@ ln -fs ../hk/*.gti .
 ls 
 cd ..
 
-#aepipeline indir=event_uf outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO chatter=3 clobber=yes hxdpi_old=no attitude=./auxil/ae${obsid}.att housekeeping=./auxil/ae${obsid}.hk extended_housekeeping=./auxil/ae${obsid}.ehk makefilter=./auxil/ae${obsid}.mkf orbit=./auxil/ae${obsid}.orb timfile=./auxil/ae${obsid}.tim
+dateobs=`date_obs.sh ./auxil/ae${obsid}.hk`
+year=`ruby -e "print ARGV[0].split('-')[0]" $dateobs`
+month=`ruby -e "print ARGV[0].split('-')[1]" $dateobs`
+
+reprocessed=0
+if [ ${year} -gt 2010 ]; then
+echo "Skipped reprocessing..."
+currentdir=`pwd`
+cd $1/../${obsid}/hxd
+ln -sf event_cl event_uf_repro
+cd $currentdir
+elif [ ${year} -lt 2010 ]; then
 currentdir=`pwd`
 cd $1/../
-aepipeline indir=$obsid outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO clobber=yes
+aepipeline indir=$obsid outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO clobber=yes hxd_gsogpt=${CALDB}/data/suzaku/hxd/bcf/ae_hxd_gsogpt_20100323.fits
+mv event_uf_repro ${obsid}/hxd/
 cd $currentdir
+reprocessed=1
+elif [ ${month} -lt 3 ]; then
+currentdir=`pwd`
+cd $1/../
+aepipeline indir=$obsid outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO clobber=yes hxd_gsogpt=${CALDB}/data/suzaku/hxd/bcf/ae_hxd_gsogpt_20100323.fits
+mv event_uf_repro ${obsid}/hxd/
+cd $currentdir
+reprocessed=1
+else
+echo "Skipped reprocessing..."
+currentdir=`pwd`
+cd $1/../${obsid}/hxd
+ln -sf event_cl event_uf_repro
+cd $currentdir
+fi
+
+
+#aepipeline indir=event_uf outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO chatter=3 clobber=yes hxdpi_old=no attitude=./auxil/ae${obsid}.att housekeeping=./auxil/ae${obsid}.hk extended_housekeeping=./auxil/ae${obsid}.ehk makefilter=./auxil/ae${obsid}.mkf orbit=./auxil/ae${obsid}.orb timfile=./auxil/ae${obsid}.tim
+#currentdir=`pwd`
+#cd $1/../
+#aepipeline indir=$obsid outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO clobber=yes
+#cd $currentdir
 
 ##check if uff_0 exists
 #uff_0=`ls event_uf_repro/ae*hxd_0_wel_uf*`
