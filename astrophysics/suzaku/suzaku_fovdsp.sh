@@ -11,6 +11,19 @@ exit
 fi
 
 file=$1
+dbFile=$HEADAS/refdata/gnrl_refr_cat_0031.fits.gz
+
+if [ ! -f $dbFile ]; then
+echo "INTEGRAL Catalog is not found in $HEADAS/refdata"
+echo "Trying to download..."
+cd $HEADAS/refdata
+wget http://www.isdc.unige.ch/integral/catalog/31/`basename $dbFile`
+if [ ! -f `basename $dbFile` ]; then
+echo "Download failed..."
+exit
+fi
+cd -
+fi
 
 if [ -f $file ];
 then
@@ -38,7 +51,8 @@ $target
 $ea1
 $ea2
 $ea3
-/work-galileo/system/local/heasoft/heasoft-6.10/x86_64-unknown-linux-gnu-libc2.5/refdata/gnrl_refr_cat_0031.fits.gz
+$dbFile
+/none
 /xs
 EOF
 
