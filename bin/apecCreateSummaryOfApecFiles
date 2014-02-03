@@ -1,3 +1,7 @@
+#!/usr/bin/env ruby
+
+#20140203 Takayuki Yuasa
+
 require "RubyFits"
 include Fits
 
