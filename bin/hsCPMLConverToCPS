@@ -4,8 +4,8 @@
 
 # Section separator
 $sectionSeparator="#=================================================================="
-$subsectionSeparator="#------------------------------------------------------------------"
-
+#$subsectionSeparator="#------------------------------------------------------------------"
+$subsectionSeparator="#-----------------------------------------------"
 # Global variables
 $sectionCounter=0
 #  Note that $sectionCounter can be changed on-the-fly by doing e.g.
@@ -15,6 +15,7 @@ $subsectionCounter=1
 $lineNumber=1
 $stopper=" "
 $processingBlockOfCheckCommands=false
+$generateCheckSheetTable=true
 
 class CPSGenerator
 def stripLeadingComma(line)
@@ -36,8 +37,16 @@ def stripLeadingAndTrailingEquals(line)
 	return line.strip()
 end
 
+def expandUserDefinedVariables(str)
+	$userDefinedVariables.each(){|key,value|
+		str.gsub!("${#{key}}",value)
+	}
+	return str
+end
+
 def dump(str)
 	str.each_line(){|line|
+		line = expandUserDefinedVariables(line)
 		puts "#{"%04d" % $lineNumber}  #{$stopper} #{line}"
 		$lineNumber=$lineNumber+1
 	}
@@ -45,6 +54,7 @@ end
 
 def dumpWithComma(str)
 	str.each_line(){|line|
+		line = expandUserDefinedVariables(line)
 		puts "#{"%04d" % $lineNumber}  . #{line}"
 		$lineNumber=$lineNumber+1
 	}
@@ -80,21 +90,17 @@ end
 
 $blockOfCheckCommands=[]
 
-def dumpBlockOfCheckCommands()
-	stopperRegistered=$stopper
-	$stopper=" "
-	if($blockOfCheckCommands.length==0)then
-		return
-	end
-	#dumps check table
-	dump <<EOS
+
+def dumpTelemetryCheckSheetTable()
+	if($generateCheckSheetTable)then
+		dump <<EOS
 #
 # -------------------------+-----------------+-----------+---------
 # #{"%25s"%"Attribute".ljust(25)} #{"%17s"%"Predict".center(17)} #{"%11s"%"Data".center(11)}  Result
 # -------------------------+-----------------+-----------+---------
 EOS
 	
-	$blockOfCheckCommands.each(){|line|
+		$blockOfCheckCommands.each(){|line|
 		if(!line.include?("CHECK "))then
 			#this might be SYSTEM or other non-CHECK commands,
 			#and then, just continue the loop.
@@ -125,15 +131,43 @@ EOS
 # %-25s %17s %s Pass/Fail
 EOS
 	}	
-	dump "#"
+		dump "#"
+	else
+		#if $generateCheckSheetTable is false, then
+		#just return.
+		return
+	end
+end
 
-	#dumps check commands themselves
+def dumpTelemetryCheckOverallResult()
+	if(!$generateCheckSheetTable)then
+		return
+	end
 	dump <<EOS
-#{$blockOfCheckCommands.join("\n")}
 #                                   Overall check result: Pass/Fail
 #
 #
 EOS
+end
+
+def dumpBlockOfCheckCommands()
+	stopperRegistered=$stopper
+	$stopper=" "
+	if($blockOfCheckCommands.length==0)then
+		return
+	end
+	
+	#dumps check table
+	dumpTelemetryCheckSheetTable()
+
+	#dumps check commands themselves
+	dump <<EOS
+#{$blockOfCheckCommands.join("\n")}
+EOS
+
+	#dump overall check
+	dumpTelemetryCheckOverallResult()
+
 	$blockOfCheckCommands=[]
 	$processingBlockOfCheckCommands=false
 	$stopper=stopperRegistered
@@ -230,6 +264,8 @@ def processMetaCommandImport(fileName)
 	dumpBlockOfCheckCommands()
 end
 
+$userDefinedVariables={}
+
 def processMetaCommandSet(array)
 	if(array.length<2)then
 		putsError "@@ set requires variable name and value."
@@ -241,7 +277,20 @@ def processMetaCommandSet(array)
 
 	if(variableName=="sectionCounter")then
 		$sectionCounter=value.to_i
+	elsif(variableName=="generateCheckSheetTable")then
+		if(value.to_s=="true" or value.to_s=="yes")then
+			$generateCheckSheetTable=true
+		elsif(value.to_s=="false" or value.to_s=="no")then
+			$generateCheckSheetTable=false
+		else
+			putsError "generateCheckSheetTable should be either of true/false (or yes/no). #{value} was provided."
+		end
+	else
+		#user-defined variable
+		$userDefinedVariables[variableName]=value.to_s
+		#puts "UserDefinedValue added: #{variableName} = #{value.to_s}"
 	end
+
 end
 
 def processFile(fileName)
