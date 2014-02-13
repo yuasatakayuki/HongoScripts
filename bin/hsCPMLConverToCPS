@@ -1,0 +1,280 @@
+#!/usr/bin/env ruby
+
+#20140212 Takayuki Yuasa
+
+# Section separator
+$sectionSeparator="#=================================================================="
+$subsectionSeparator="#------------------------------------------------------------------"
+
+# Global variables
+$sectionCounter=0
+#  Note that $sectionCounter can be changed on-the-fly by doing e.g.
+#  @@ set sectionCounter 5
+#  in the source file.
+$subsectionCounter=1
+$lineNumber=1
+$stopper=" "
+$processingBlockOfCheckCommands=false
+
+class CPSGenerator
+def stripLeadingComma(line)
+	line=line.strip()
+	while(line[0]==".")do
+		line=line[1...(line.length)].strip()
+	end
+	return line.strip()
+end
+
+def stripLeadingAndTrailingEquals(line)
+	line=line.strip()
+	while(line[0]=="=")do
+		line=line[1...(line.length)].strip()
+	end
+	while(line[-1]=="=")do
+		line=line[0...(line.length-1)].strip()
+	end
+	return line.strip()
+end
+
+def dump(str)
+	str.each_line(){|line|
+		puts "#{"%04d" % $lineNumber}  #{$stopper} #{line}"
+		$lineNumber=$lineNumber+1
+	}
+end
+
+def dumpWithComma(str)
+	str.each_line(){|line|
+		puts "#{"%04d" % $lineNumber}  . #{line}"
+		$lineNumber=$lineNumber+1
+	}
+end
+
+def processSectionHeader(line)
+	$sectionCounter=$sectionCounter+1
+	$subsectionCounter=1
+	sectionNumber = "#{$sectionCounter}."
+	title=stripLeadingAndTrailingEquals(line)
+	dump $sectionSeparator
+	dumpWithComma "# #{sectionNumber} #{title}"
+	dump $sectionSeparator
+end
+
+def processSubsectionHeader(line)
+	sectionNumber = "#{$sectionCounter}.#{$subsectionCounter}."
+	title=stripLeadingAndTrailingEquals(line)
+	dump $subsectionSeparator
+	dumpWithComma "# #{sectionNumber} #{title}"
+	dump $subsectionSeparator
+	$subsectionCounter=$subsectionCounter+1
+end
+
+def processComment(line)
+	if(line[0..1]!="# ")then
+		line=line[1...(line.length)]
+		dump "# #{line}"
+	else
+		dump line
+	end
+end
+
+$blockOfCheckCommands=[]
+
+def dumpBlockOfCheckCommands()
+	stopperRegistered=$stopper
+	$stopper=" "
+	if($blockOfCheckCommands.length==0)then
+		return
+	end
+	#dumps check table
+	dump <<EOS
+#
+# -------------------------+-----------------+-----------+---------
+# #{"%25s"%"Attribute".ljust(25)} #{"%17s"%"Predict".center(17)} #{"%11s"%"Data".center(11)}  Result
+# -------------------------+-----------------+-----------+---------
+EOS
+	
+	$blockOfCheckCommands.each(){|line|
+		if(!line.include?("CHECK "))then
+			#this might be SYSTEM or other non-CHECK commands,
+			#and then, just continue the loop.
+			next
+		end
+		array=line.split(" ")
+		attributePath=array[1]
+		attributeName=attributePath.split(".")[-1]
+
+		expectedValue="???"
+		dataInputForm="___________"
+		if(line.include?("="))then
+			expectedValue=line.split("=")[-1]
+			dataInputForm="___________"
+		elsif(line.include?("updatewait"))then
+			expectedValue="updated"
+			dataInputForm="____->_____"
+		else
+			if(array[2]!=nil)then
+				expectedValue=array[2...(array.length)].join(" ")
+			else
+				putsError "No expected value provided to a CHECK command."
+			end
+		end
+		
+
+		dump <<EOS % [attributeName, expectedValue.center(17), dataInputForm]
+# %-25s %17s %s Pass/Fail
+EOS
+	}	
+	dump "#"
+
+	#dumps check commands themselves
+	dump <<EOS
+#{$blockOfCheckCommands.join("\n")}
+#                                   Overall check result: Pass/Fail
+#
+#
+EOS
+	$blockOfCheckCommands=[]
+	$processingBlockOfCheckCommands=false
+	$stopper=stopperRegistered
+end
+
+def processCommandExecution(line)
+	if(line.index("SYSTEM ")==0)then
+		#if SYSTEM command appears inside a block of CHECK commands,
+		#it should be dumped together with those CHECK commands.
+		if($processingBlockOfCheckCommands)then
+			$blockOfCheckCommands << line
+		else
+			dump line
+		end
+	elsif(line.index("CHECK ")==0)then
+		#if check command, automatically generate a table
+		$processingBlockOfCheckCommands=true
+		$blockOfCheckCommands << line
+	else
+		#this means an end of a block of check commands,
+		#and therefore, dumps check table and check
+		#commands themselves.
+		if($processingBlockOfCheckCommands)then
+			dumpBlockOfCheckCommands()
+		end
+		dump line
+	end
+end
+
+def processMetaCommand(line)
+	line.gsub!("@@","").strip!()
+	array=line.split(" ")
+	if(array.length==0)then
+		return
+	end
+	command=array[0]
+
+	#puts "MetaCommand = #{command}"
+
+	if(command=="set")then
+		processMetaCommandSet(array[1...(array.length)])
+	elsif(command=="import" or command=="include")then
+		if(array[1]==nil)then
+			putsError "@@ import command requires file name."
+		end
+		fileName=array[1].gsub('"',"")
+		processMetaCommandImport(fileName)
+	end
+
+end
+
+def processLine(lineString)
+	line=lineString.strip()
+	
+	if(line.include?("//"))then
+		dumpBlockOfCheckCommands()
+		return
+	elsif(line.include?("@@"))then
+		dumpBlockOfCheckCommands()
+		processMetaCommand(line)
+	elsif(line.include?("==="))then
+		dumpBlockOfCheckCommands()
+		processSubsectionHeader(line)
+	elsif(line.include?("=="))then
+		dumpBlockOfCheckCommands()
+		processSectionHeader(line)
+	elsif(line[0]=="#")then
+		dumpBlockOfCheckCommands()
+		processComment(line)
+	elsif(line.gsub(" ","")[1]=="#")then
+		dumpBlockOfCheckCommands()
+		$stopper="."
+		line=stripLeadingComma(line)
+		processComment(line)
+		$stopper=" "
+	elsif(line[0]==".")then
+		$stopper="."
+		line=stripLeadingComma(line)
+		processCommandExecution(line)
+		$stopper=" "
+	elsif(line.length!=0)then
+		processCommandExecution(line)
+	else #if line==""
+		dumpBlockOfCheckCommands()
+		processComment("#")
+	end
+
+end
+
+def processMetaCommandImport(fileName)
+	open(fileName).each(){|line|
+		processLine(line)
+	}
+	dumpBlockOfCheckCommands()
+end
+
+def processMetaCommandSet(array)
+	if(array.length<2)then
+		putsError "@@ set requires variable name and value."
+	end
+	variableName=array[0]
+	value=array[1]
+
+	#puts "processMetaCommandSet #{array[0]} #{array[1]}"
+
+	if(variableName=="sectionCounter")then
+		$sectionCounter=value.to_i
+	end
+end
+
+def processFile(fileName)
+	open(fileName).each(){|line|
+		processLine(line)
+	}
+	dumpBlockOfCheckCommands()
+	processLine("#")
+	processLine("# End of file")
+end
+
+def putsError(str)
+	#todo: implement filename and line number of error
+	STDERR.puts str
+	exit
+end
+end #end of class definition
+
+
+# Sample of check-sheet table
+# -------------------------+-----------------+-----------+---------
+# Attribute                 Predict           Data        Result
+# -------------------------+-----------------+-----------+---------
+# CMD_RCV_COUNT              +1               ____->_____ Pass/Fail
+# IS_SAMPLING                Sampling         ____________Pass/Fail
+
+#---------------------------------------------
+# Main routine
+#---------------------------------------------
+if (ARGV.length==0) then
+	STDERR.puts "provide input file name"
+	exit
+end
+inputFile=ARGV[0]
+generator=CPSGenerator.new
+generator.processFile(inputFile)
