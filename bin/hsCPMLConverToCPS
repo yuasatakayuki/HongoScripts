@@ -69,7 +69,7 @@ def constructAndGetHeader()
 		elsif($outputFileName.downcase.include?("dcsm"))then #dcsm
 			# something like
 			# #!HEAD: dcsm-CAMS1-AlignmentTestExtraSteps 2013-12-25 10:07:22 866 47 ASTRO-H DCSM
-			result="#!HEAD: #{basename} #{dateTime} #{nLines} #{$satelliteNumber} #{$satelliteName} DCSM"
+			result="#!HEAD: #{basename} #{dateTime} #{nLines} #{$satelliteNumber} #{$satelliteName} DCSM //    #"
 		else
 			result="# Warning: MAIN/DCSM header was not automatically generated because 'outputFileName' does not include 'main-' or 'dcsm-'"
 		end
@@ -345,8 +345,10 @@ def processMetaCommandSet(array)
 		$sectionCounter=value.to_i
 	elsif(variableName=="generateCheckSheetTable")then
 		if(value.to_s=="true" or value.to_s=="yes")then
+			#STDERR.puts "CheckSheet generation is turned on."
 			$generateCheckSheetTable=true
 		elsif(value.to_s=="false" or value.to_s=="no")then
+			#STDERR.puts "CheckSheet generation is turned off."
 			$generateCheckSheetTable=false
 		else
 			putsError "generateCheckSheetTable should be either of true/false (or yes/no). #{value} was provided."
