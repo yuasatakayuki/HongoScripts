@@ -144,7 +144,7 @@ def processComment(line)
 end
 
 $blockOfCheckCommands=[]
-
+$blockOfCheckCommandsStoppers=[]
 
 def dumpTelemetryCheckSheetTable()
 	if($generateCheckSheetTable)then
@@ -215,9 +215,13 @@ def dumpBlockOfCheckCommands()
 	dumpTelemetryCheckSheetTable()
 
 	#dumps check commands themselves
-	dump <<EOS
-#{$blockOfCheckCommands.join("\n")}
+	str=""
+	$blockOfCheckCommands.each_with_index(){|e,i|
+		$stopper=$blockOfCheckCommandsStoppers[i]
+		dump <<EOS
+#{$blockOfCheckCommands[i]}
 EOS
+	}
 
 	#dump overall check
 	dumpTelemetryCheckOverallResult()
@@ -240,6 +244,7 @@ def processCommandExecution(line)
 		#if check command, automatically generate a table
 		$processingBlockOfCheckCommands=true
 		$blockOfCheckCommands << line
+		$blockOfCheckCommandsStoppers << $stopper
 	else
 		#this means an end of a block of check commands,
 		#and therefore, dumps check table and check
