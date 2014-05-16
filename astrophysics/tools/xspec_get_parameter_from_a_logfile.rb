@@ -48,7 +48,7 @@ open(logfile).each{|line|
 	  #puts "Nparameter=#{npara}"
 	 end
  end
- if(line.include?("XSPEC") and line.include?(">") and line.include?("err"))then
+ if(line.include?("XSPEC") and line.include?(">") and line.include?("err") and !line.include?("eqw"))then
   errorcommands.push(i)
  end
  i=i+1
