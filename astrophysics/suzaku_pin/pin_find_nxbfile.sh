@@ -12,14 +12,19 @@ fi
 file=$1
 type=$2
 
-quickurl=http://www.astro.isas.ac.jp/suzaku/analysis/hxd/pinnxb/pinnxb_ver2.0/
-tunedurl=http://www.astro.isas.ac.jp/suzaku/analysis/hxd/pinnxb/pinnxb_ver2.0_tuned/
 
 obsid=`getheader.sh $file 0 obs_id`
 dateobs=`date_obs.sh $file`
 
 year=`ruby -e "print ARGV[0].split('-')[0]" $dateobs`
 month=`ruby -e "print ARGV[0].split('-')[1]" $dateobs`
+
+version22StartYearMonth=201208
+
+nxbVersion=`ruby -e "if($year$month>$version22StartYearMonth)then puts 2.0; else puts 2.2; end"`
+
+quickurl=http://www.astro.isas.ac.jp/suzaku/analysis/hxd/pinnxb/pinnxb_ver2.0/
+tunedurl=http://www.astro.isas.ac.jp/suzaku/analysis/hxd/pinnxb/pinnxb_ver${nxbVersion}_tuned/
 
 #echo "searching PIN $type NXB for OBSID:$obsid (${year}-${month})"
 
