@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20140527
+
+if(ARGV.length==0)then
+	STDERR.puts "Provide a csv file and separator (optional)"
+	exit
+end
+
+file=ARGV[0]
+if(!File.exist?(file))then
+	STDERR.puts "Error: file not found"
+	exit
+end
+
+separator=","
+if(ARGV[1]!=nil)then
+	separator=ARGV[1]
+end
+
+trTags=[]
+open(file).each(){|line|
+	array=line.split(separator)
+	str="<tr>"
+	array.each(){|e|
+		str=str+"<td>"+e+"</td>"
+	}
+	str=str+"</tr>"
+	trTags << str
+}
+
+puts <<EOS
+<table>
+#{trTags.join("\n")}
+</table>
+EOS

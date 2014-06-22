@@ -1,0 +1,11 @@
+
+
+cat << EOF
+
+#include "CxxUtilities/CxxUtilities.hh"
+
+int main(int argc, char* argv[]){
+
+}
+
+EOF

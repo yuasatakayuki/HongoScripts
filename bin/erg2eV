@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+
+#20130625 Takayuki Yuasa
+
+#ARGV[0] erg
+j=ARGV[0].to_f*1e-7
+
+eV=j*6.241e18
+puts "%.5e" % eV

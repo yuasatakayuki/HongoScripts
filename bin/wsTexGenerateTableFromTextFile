@@ -1,0 +1,65 @@
+#!/usr/bin/env ruby
+
+#2013-08-29 Takayuki Yuasa
+
+if(ARGV.length==0)then
+	puts <<EOS
+give comma-separated text file.
+notes:
+- "-t" option could be passed to change delimitter from comma to tab.
+- "\\hline" could be inserted to add horizontal separator.
+EOS
+exit
+end
+
+
+delimitter=","
+if(ARGV.count("-t")!=0)then
+	delimitter="\t"
+	ARGV.delete("-t")
+end
+
+puts <<EOS
+\\begin{table}[htb]
+\\begin{center}
+\\caption{}
+\\label{}
+EOS
+
+contents=[]
+maxNElements=0
+for file in ARGV do
+	open(file).each(){|line|
+		line.chomp!()
+		line.gsub!("&","\\&")
+		line.gsub!("_","\\_")
+		contents << line.split(delimitter)
+	}
+	if(contents[-1].length>maxNElements)then
+		maxNElements=contents[-1].length
+	end
+end
+
+puts <<EOS
+\\begin{tabular}{#{"l"*maxNElements}}
+\\hline
+EOS
+
+
+for line in contents do
+	while line.length<maxNElements do
+		line << " "
+	end
+	if(line.count("\\hline")!=0)then
+		puts "\\hline"
+	else
+		puts "#{line.join(" & ")} \\\\"
+	end
+end
+
+puts <<EOS
+\\hline
+\\end{tabular}
+\\end{center}
+\\end{table}
+EOS

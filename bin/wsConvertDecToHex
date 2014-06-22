@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+
+#20130703 Takayuki Yuasa
+
+if ( ARGV.length == 0 ) then
+ puts "give decimanl number or filename"
+ exit
+end
+
+
+filename=""
+if(File.exist?(ARGV[0]))then
+filename=ARGV[0]
+end
+
+
+def toHex(decString)
+ str="%X" % decString.to_i
+ if(str.length%2==1)then
+  str="0"+str
+ end
+ return str
+end
+
+if(filename!="")then
+ open(filename).each(){ |line|
+  separator=" "
+  if(line.include?(","))then
+   separator=", "
+  end
+  
+  array=line.split(separator)
+  resultingLine=""
+  for i in 0...(array.length) do
+   resultingLine=resultingLine+toHex(array[i].to_i)
+   if(i!=array.length-1)then
+    resultingLine << separator
+   end
+  end
+  puts resultingLine  
+ } 
+else
+ hexValue=toHex(ARGV[0])
+ puts hexValue
+end

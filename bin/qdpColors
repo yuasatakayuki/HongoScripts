@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#Takayuki Yuasa 20140513
+
+cat << EOF
+ PGPLOT colors are:
+  0=Backg,     1=Foreg,       2=Red,         3=Green,
+  4=Blue,      5=Light blue,  6=Magenta,     7=Yellow,
+  8=Orange,    9=Yel.+Green, 10=Green+Cyan, 11=Blue+Cyan,
+ 12=Blue+Mag, 13=Red+Mag,    14=Dark Grey,  15=Light Grey
+EOF

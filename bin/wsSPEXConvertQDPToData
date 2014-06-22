@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#Takayuki Yuasa 20130125
+
+if [ _$1 != _ ]; then
+
+file=$1
+n=`wsFileGetLineNumber $file`
+tail -`calc $n-1` $file > `basename ${file} .qdp`.data
+
+fi

@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+
+#2013-08-30 Takayuki Yuasa
+
+if(ARGV.length==0)then
+	puts <<EOS
+wsSeq (from) (to) (step; optional) (format; optional)
+
+EOS
+	exit
+end
+
+if(ARGV.length==1)then
+	puts ARGV[0]
+end
+
+
+from=ARGV[0].to_f
+to=ARGV[1].to_f
+step=1
+if(ARGV[2]!=nil and ARGV[2]!="-")then
+	step=ARGV[2].to_f
+end
+format=""
+if(ARGV[3]!=nil)then
+	format=ARGV[3]
+end
+
+
+
+integer=false
+if(from.to_i==from and to.to_i==to and step.to_i==step)then
+	integer=true
+end
+
+array=[]
+
+if(from<to)then
+	x=from
+	while x<to do
+		if(format!="")then
+			array << (format % x)
+		elsif(integer==true)then
+			array << x.to_i
+		else
+			array << x
+		end
+		x=x+step
+	end
+else
+	x=from
+	while x>to do
+		if(format!="")then
+			array << (format % x)
+		elsif(integer==true)then
+			array << x.to_i
+		else
+			array << x
+		end
+		x=x-step
+	end
+end
+
+puts array.join(" ")
