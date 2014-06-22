@@ -1,0 +1,66 @@
+#!/bin/bash
+
+#20130723 Takayuki Yuasa
+
+if [ _$2 = _ ]; then
+cat << EOF
+give the following arguments:
+  1: a relative path to suzaku data folder (e.g. ../../data/408018020).
+  2: output file name (e.g pinEarthOccultation.evt)
+EOF
+exit
+fi
+
+eventUFDir=$1/hxd/event_uf
+
+if [ ! -d $1 ]; then
+echo "$1 is not found..."
+exit
+fi
+
+if [ ! -d $eventUFDir ]; then
+echo "hxd event_uf folder is not found."
+exit
+fi
+
+outputFile=$2
+
+#
+# detType
+#  0 = gso
+#  1 = pin
+#  2 = pseudo
+#
+detType=2
+
+eventFileList=`get_hash_random.pl`
+
+echo "Creatint a unfiltered event file list..."
+ls $eventUFDir/ae*hxd*wel_uf* > $eventFileList
+cat $eventFileList
+
+rm -f $outputFile
+
+echo "---------------------------------------------"
+echo "Filtering with XSELECT"
+echo "---------------------------------------------"
+xselect << EOF
+
+read event @$eventFileList ./
+read hk
+.
+$ehkFile
+
+filter column "DET_TYPE=$detType:$detType"
+filter hk 
+SAA_HXD==0 && T_SAA_HXD>500 && TN_SAA_HXD>180 && COR>6
+
+extract event
+
+save event $outputFile
+n
+exit
+
+EOF
+
+rm $eventFileList

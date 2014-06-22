@@ -1,0 +1,94 @@
+#!/bin/bash
+
+#20130723 Takayuki Yuasa
+
+if [ _$3 = _ ]; then
+cat << EOF
+give the following arguments:
+  1: a relative path to suzaku data folder (e.g. ../../data/408018020).
+  2: pin/gso
+  3: output file name (e.g pinEarthOccultation.evt)
+EOF
+exit
+fi
+
+eventUFDir=$1/hxd/event_uf
+auxilDir=$1/auxil
+
+if [ ! -d $1 ]; then
+echo "$1 is not found..."
+exit
+fi
+
+if [ ! -d $eventUFDir ]; then
+echo "hxd event_uf folder is not found."
+exit
+fi
+
+if [ ! -d $auxilDir ]; then
+echo "auxil folder is not found."
+exit
+fi
+
+detector=$2
+outputFile=$3
+
+
+#
+# detType
+#  0 = gso
+#  1 = pin
+#  2 = pseudo
+#
+
+detType=1
+if [ $detector = gso ]; then
+ detType=0
+fi
+
+eventFileList=`get_hash_random.pl`
+
+echo "Creatint a unfiltered event file list..."
+ls $eventUFDir/ae*hxd*wel_uf* > $eventFileList
+cat $eventFileList
+
+echo "Searching an EHK file..."
+ehkFile=`ls $auxilDir/ae*ehk 2> /dev/null`
+if [ _$ehkFile = _ ]; then
+echo "ehk file was not found in $auxliDir."
+exit
+fi
+echo "found at $ehkFile"
+
+rm -f $outputFile
+
+#judge if absolute path
+readPath="./"
+isAbsolutePath=`wsFileContainsAbsolutePath $eventFileList`
+if [ _$isAbsolutePath = _true ]; then
+readPath="/"
+fi
+
+echo "---------------------------------------------"
+echo "Filtering with XSELECT"
+echo "---------------------------------------------"
+xselect << EOF
+
+read event @$eventFileList $readPath
+read hk
+.
+$ehkFile
+
+filter column "DET_TYPE=$detType:$detType"
+filter hk 
+SAA_HXD==0 && T_SAA_HXD>500 && TN_SAA_HXD>180 && COR>6 && ELV < 5
+
+extract event
+
+save event $outputFile
+n
+exit
+
+EOF
+
+rm $eventFileList

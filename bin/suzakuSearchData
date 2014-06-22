@@ -1,0 +1,134 @@
+#!/usr/bin/env ruby
+
+#2013-09-18 Takayuki Yuasa
+
+require 'net/http'
+require "cgi"
+require "csv"
+
+#############################################
+# Functions
+#############################################
+def escape(str)
+	return CGI.escape(str)
+end
+
+# Target Name
+def getSearchURLForName(name)
+	return "http://darts.isas.jaxa.jp/astro/suzaku/suzakumaster/suzakuMasterSearchCondition.do?lookupDispatchKey=SEARCH&max=100&sort=OBSID&sortSeq=%2B&line=short&searchMenu=CSV&areaQueryChecked=on&areaShape=fov&areaQueryType=targetName&target=#{escape(name.join(" "))}"
+end
+
+# Coordinate J2000
+def getSearchURLForCoordinateJ2000(coordinate)
+	return "http://darts.isas.jaxa.jp/astro/suzaku/suzakumaster/suzakuMasterSearchCondition.do?lookupDispatchKey=SEARCH&max=100&sort=OBSID&sortSeq=%2B&line=short&searchMenu=CSV&areaQueryChecked=on&areaShape=fov&areaQueryType=coordinate&coo=#{escape(coordinate.join(" "))}&coo_type=J2000"
+end
+
+# Coordinate Galactic
+def getSearchURLForCoordinateGalactic(coordinate)
+	return "http://darts.isas.jaxa.jp/astro/suzaku/suzakumaster/suzakuMasterSearchCondition.do?lookupDispatchKey=SEARCH&max=100&sort=OBSID&sortSeq=%2B&line=short&searchMenu=CSV&areaQueryChecked=on&areaShape=fov&areaQueryType=coordinate&coo=#{escape(coordinate.join(" "))}&coo_type=Galactic"
+end
+
+# Period - observation date
+def getSearchURLForObservationDate(array)
+	startYear=array[0]
+	startMonth=array[1]
+	startDay=array[2]
+	endYear=array[3]
+	endMonth=array[4]
+	endDay=array[5]
+	return "http://darts.isas.jaxa.jp/astro/suzaku/suzakumaster/suzakuMasterSearchCondition.do?lookupDispatchKey=SEARCH&max=100&sort=OBSID&sortSeq=%2B&line=short&searchMenu=CSV&dateChecked=on&obs_date_startY=#{startYear}&obs_date_startM=#{startMonth}&obs_date_startD=#{startDay}&obs_date_endY=#{endYear}&obs_date_endM=#{endMonth}&obs_date_endD=#{endDay}&proc_date_startY=null&proc_date_startM=null&proc_date_endY=null&proc_date_endM=null&pub_date_startY=null&pub_date_startM=null&pub_date_endY=null&pub_date_endM=null&dis_date_startY=null&dis_date_startM=null&dis_date_endY=null&dis_date_endM=null"
+end
+
+# Period - public date
+def getSearchURLForPublicDate(array)
+	startYear=array[0]
+	startMonth=array[1]
+	startDay=array[2]
+	endYear=array[3]
+	endMonth=array[4]
+	endDay=array[5]
+	return "http://darts.isas.jaxa.jp/astro/suzaku/suzakumaster/suzakuMasterSearchCondition.do?lookupDispatchKey=SEARCH&max=100&sort=OBSID&sortSeq=%2B&line=short&searchMenu=CSV&dateChecked=on&obs_date_startY=null&obs_date_startM=null&obs_date_startD=null&obs_date_endY=null&obs_date_endM=null&obs_date_endD=null&proc_date_startY=null&proc_date_startM=null&proc_date_endY=null&proc_date_endM=null&pub_date_startY=#{startYear}&pub_date_startM=#{startMonth}&pub_date_startD=#{startDay}&pub_date_endY=#{endYear}&pub_date_endM=#{endMonth}&pub_date_endD=#{endDay}&dis_date_startY=null&dis_date_startM=null&dis_date_endY=null&dis_date_endM=null"
+end
+
+# Pattern match - abstract
+def getSearchURLForAbstract(keywords)
+	return "http://darts.isas.jaxa.jp/astro/suzaku/suzakumaster/suzakuMasterSearchCondition.do?lookupDispatchKey=SEARCH&max=100&sort=OBSID&sortSeq=%2B&line=short&searchMenu=CSV&patternChecked=on&name=&obsid=&adstract=#{escape(keywords.join(" "))}&pi=&co_pi=&title=&proc_ver=&prnb="
+end
+
+# Pattern match - PI name
+def getSearchURLForPI(piName)
+	return "http://darts.isas.jaxa.jp/astro/suzaku/suzakumaster/suzakuMasterSearchCondition.do?lookupDispatchKey=SEARCH&max=100&sort=OBSID&sortSeq=%2B&line=short&searchMenu=CSV&patternChecked=on&name=&obsid=&adstract=&pi=#{escape(piName.join(" "))}&co_pi=&title=&proc_ver=&prnb="
+end
+
+# get url depending on search mode
+def getURL(mode, keywords)
+	if(mode=="name")then
+		return getSearchURLForName(keywords)
+	end
+	if(mode=="radec" or mode=="j2000" or mode=="J2000")then
+		return getSearchURLForCoordinateJ2000(keywords)
+	end
+	if(mode=="gal" or mode=="galactic" or mode=="Galactic")then
+		return getSearchURLForCoordinateGalactic(keywords)
+	end
+	if(mode=="date" or mode=="obsDate" or mode=="obsdate" or mode=="dateobs")then
+		return getSearchURLForObservationDate(keywords)
+	end
+	if(mode=="publicDate" or mode=="public")then
+		return getSearchURLForPublicDate(keywords)
+	end
+	if(mode=="abstract")then
+		return getSearchURLForAbstract(keywords)
+	end
+	if(mode=="pi" or mode=="piName")then
+		return getSearchURLForPI(keywords)
+	end
+end
+
+#############################################
+# Main process
+#############################################
+
+if(ARGV.length<2)then
+puts <<EOS
+usage: suzakuSearchData (mode) (search keywods)
+	mode = name/j2000/radec/gal/galactic/date/publicDate/abstract/piName/pi
+	search keywords = array of keywords
+	e.g.
+		(1) suzakuSearchData date 2009 03 28 2010 04 01
+		(2) suzakuSearchData name v1223 sgr
+		(3) suzakuSearchData pi yuasa
+EOS
+exit
+end
+
+mode=ARGV[0]
+ARGV.shift()
+
+
+
+
+#Get result
+uri = URI(getURL(mode,ARGV))
+response = Net::HTTP.get(uri)
+
+
+
+#remove escaped double quotations
+response.gsub!(/""/,'')
+reader=CSV.parse(response)
+
+#Display result
+r=reader[0]
+
+puts "============================================================================================="
+puts "#{"%-20s"%r[0]} #{"%-7s"%r[1]}  #{"%-7s"%r[2]}  #{"%-19s"%r[6]}  #{"%-9s"%r[8]}  #{"%-12s"%r[9]}  #{r[38]}"
+puts "============================================================================================="
+
+reader.shift()
+reader.each(){ |r| 
+time=r[6]
+if(time!=nil and time!="null")then
+	puts "#{"%-20s"%r[0]} #{"%7.3f"%r[1].to_f}  #{"%7.3f"%r[2].to_f}  #{"%-19s"%r[6]}  #{"%-9s"%r[8]}  #{"%-12.2f"%r[9]}  #{r[38]}"
+end
+}
