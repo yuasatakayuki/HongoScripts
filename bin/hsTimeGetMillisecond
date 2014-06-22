@@ -1,3 +1,5 @@
+#!/usr/bin/env perl
+
 use Time::HiRes qw(gettimeofday);
 ($sec,$microsec)=gettimeofday();
 print $sec.$microsec;
