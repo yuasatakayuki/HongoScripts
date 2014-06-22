@@ -1,17 +1,1 @@
-#!/bin/bash
-
-#20100802 Takayuki Yuasa
-
-if [ _$1 = _ ]; then
-cat << EOF 1>&2
-usage : `basename $0` (file)
-
-Returns full path of the file.
-
-EOF
-exit -1
-fi
-
-if [ -f $1 -o -d $1 ]; then
-ruby -e "path=File::expand_path('$1');puts path"
-fi
+fullpath
