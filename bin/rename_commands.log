@@ -1,0 +1,27 @@
+yuasa@crcosmo[bin]$ b ./rename_commands.sh 
+fatal: can not move directory into itself, source=bin/awkN, destination=bin/awkN
+fatal: can not move directory into itself, source=bin/beep, destination=bin/beep
+fatal: can not move directory into itself, source=bin/bin2dec, destination=bin/bin2dec
+fatal: can not move directory into itself, source=bin/calc, destination=bin/calc
+fatal: can not move directory into itself, source=bin/chrun, destination=bin/chrun
+fatal: can not move directory into itself, source=bin/dat2root, destination=bin/dat2root
+fatal: can not move directory into itself, source=bin/dec2bin, destination=bin/dec2bin
+fatal: can not move directory into itself, source=bin/dec2hex, destination=bin/dec2hex
+fatal: can not move directory into itself, source=bin/dgaus.c, destination=bin/dgaus.c
+fatal: can not move directory into itself, source=bin/expander.pl, destination=bin/expander.pl
+fatal: bad source, source=bin/filelist, destination=bin/filelist
+fatal: can not move directory into itself, source=bin/hex2bin, destination=bin/hex2bin
+fatal: can not move directory into itself, source=bin/hex2dec, destination=bin/hex2dec
+fatal: can not move directory into itself, source=bin/hsCPMLConverToCPS, destination=bin/hsCPMLConverToCPS
+fatal: can not move directory into itself, source=bin/hsElementNameOfZ, destination=bin/hsElementNameOfZ
+fatal: can not move directory into itself, source=bin/hsImageRenameJpegFilesWithEXIFDates, destination=bin/hsImageRenameJpegFilesWithEXIFDates
+fatal: bad source, source=bin/initialize.sh, destination=bin/initialize.sh
+fatal: can not move directory into itself, source=bin/keVtoKelvin, destination=bin/keVtoKelvin
+fatal: can not move directory into itself, source=bin/nanow, destination=bin/nanow
+fatal: can not move directory into itself, source=bin/tempfile, destination=bin/tempfile
+fatal: can not move directory into itself, source=bin/updatehongoscripts.sh, destination=bin/updatehongoscripts.sh
+fatal: bad source, source=bin/date2yday, destination=bin/date2yday
+fatal: can not move directory into itself, source=bin/eV2erg, destination=bin/eV2erg
+fatal: can not move directory into itself, source=bin/erg2eV, destination=bin/erg2eV
+fatal: can not move directory into itself, source=bin/qdpColors, destination=bin/qdpColors
+fatal: bad source, source=bin/yday2date, destination=bin/yday2date
