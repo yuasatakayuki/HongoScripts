@@ -51,3 +51,11 @@ When installaed as a folder (i.e. without make install), set something like:
 export PATH=path_to/HongoScripts/bin:$PATH
 export RUBYLIB=path_to/HongoScripts/ruby:$RUBYLIB
 </pre>
+
+
+== History ==
+*20080620 created
+*20080620 getheader.sh setheader.sh exposure.sh areascal.sh backscal.sh
+*20080620 instrume.sh
+*20080818 copy pdftkall, ps2pdfall, chrun, mkxsp_result.sh from ~/bin
+*20140623 updated to version 2 (with cmake-install support and new naming convention)
