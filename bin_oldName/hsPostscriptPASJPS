@@ -1,4 +1,0 @@
-#!/bin/bash
-
-ps2eps --ignoreBB -R + -f $1
-

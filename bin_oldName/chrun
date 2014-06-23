@@ -1,5 +1,0 @@
-#!/bin/bash
-
-#20070502 Takayuki Yuasa
-
-chmod 755 $@

@@ -1,5 +1,0 @@
-#!/bin/bash
-
-#2013-10-23 Takayuki Yuasa
-
-echo "temporary_`wsHash`"

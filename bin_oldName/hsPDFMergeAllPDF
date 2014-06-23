@@ -1,7 +1,0 @@
-#!/bin/bash
-
-#20070514 Takayuki Yuasa
-
-rm all.pdf &> /dev/null
-pdftk *pdf cat output all.pdf
-

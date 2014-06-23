@@ -1,8 +1,0 @@
-#!/usr/bin/python
-
-#20081126 Takayuki Yuasa
-import sys,string;
-
-if len(sys.argv) > 1:
-	a=sys.argv[1];
-	print int(a,2);

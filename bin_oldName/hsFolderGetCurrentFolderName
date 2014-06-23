@@ -1,5 +1,0 @@
-#!/usr/bin/env ruby
-
-#20100420 Takayuki Yuasa
-
-print Dir.pwd().split("/")[-1]
