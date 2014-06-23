@@ -2,6 +2,7 @@
 
 #20090901 Takayuki Yuasa
 #20091003 Takayuki Yuasa bug in argument interpretation fixed
+#20140623 Takayuki Yuasa window file location changed
 
 if [ _$5 = _ ];
 then
@@ -11,7 +12,7 @@ exit
 
 fi
 
-windowfile=$hongoscriptsdir/astrophysics/etc/hsFtoolsXronosNoWindow.wi
+windowfile=$HOME/.hongoscripts/files/hsFtoolsXronosNoWindow.wi
 
 infile=$1
 outputprefix=$2
