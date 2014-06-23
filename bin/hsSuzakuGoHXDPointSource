@@ -2,7 +2,7 @@
 
 #20100125 Takayuki Yuasa ana/ changed to analysis/
 
-ScriptName="go_hxd_pointsource.sh"
+ScriptName="hsSuzakuGoHXDPointSource"
 
 ############################################
 #Load modules
@@ -14,14 +14,13 @@ require "fileutils"
 ############################################
 #Load related files
 ############################################
-hongoscriptsdir=ENV['hongoscriptsdir']
-require "#{hongoscriptsdir}/astrophysics/suzaku/ruby-suzaku-analysisinformation.rb"
-require "#{hongoscriptsdir}/astrophysics/suzaku_hxd/ruby-suzaku-hxd.rb"
-require "#{hongoscriptsdir}/astrophysics/suzaku_hxd/ruby-suzaku-hxd-files.rb"
-require "#{hongoscriptsdir}/astrophysics/suzaku_pin/ruby-suzaku-pin-files.rb"
-require "#{hongoscriptsdir}/astrophysics/suzaku_pin/ruby-suzaku-pin.rb"
-require "#{hongoscriptsdir}/astrophysics/suzaku_gso/ruby-suzaku-gso.rb"
-require "#{hongoscriptsdir}/astrophysics/suzaku_gso/ruby-suzaku-gso-files.rb"
+require "ruby-suzaku-analysisinformation.rb"
+require "ruby-suzaku-hxd.rb"
+require "ruby-suzaku-hxd-files.rb"
+require "ruby-suzaku-pin-files.rb"
+require "ruby-suzaku-pin.rb"
+require "ruby-suzaku-gso.rb"
+require "ruby-suzaku-gso-files.rb"
 
 ############################################
 #Utility functions
