@@ -2,7 +2,7 @@
 
 binning=8
 
-if [ _$2 = _ -o `hsFolderGetPath 2` != "xis/image_analysis" ]; then
+if [ _$2 = _ -o `hsFolderGetPath $2` != "xis/image_analysis" ]; then
 cat << EOF 1>&2
 `basename $0` (event file) (tag name) (energy lower in keV;optional) (energy upper in keV;optional)
 

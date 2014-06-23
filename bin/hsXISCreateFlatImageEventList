@@ -21,7 +21,7 @@ exit -1
 fi
 
 #check folder path
-path=`hsFolderGetPath 2`
+path=`hsFolderGetPath $2`
 if [ _$path != _ -a $path = "xis/image_analysis" ]; then
 echo ""
 else
