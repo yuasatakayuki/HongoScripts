@@ -21,7 +21,7 @@ if [ $remainder = 1 ];
 then
 
 newfile=`basename $file .pdf`_even.pdf
-pdftk $file $hongoscriptdir/shell/filemanipulation/hsEmptyPDF.pdf cat output $newfile
+pdftk $file $HOME/.hongoscripts/files/hsEmptyPDF.pdf cat output $newfile
 
 mv $newfile $file
 else
