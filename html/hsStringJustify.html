@@ -1,0 +1,30 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#20100904 Takayuki Yuasa
+
+if(ARGV.length&lt;2)then
+STDERR.puts &quot;give a string and a length to which the string should be adjusted&quot;
+STDERR.puts &quot;optionally third argument is used as filling character instead of space.&quot;
+exit
+end
+
+str=ARGV[0]
+n=ARGV[1].to_i
+c=&quot; &quot;
+if(ARGV.length==3 and ARGV[2].length==1)then
+c=ARGV[2]
+end
+
+if(n&lt;=str.length)then
+puts str
+else
+spaces=c*(n-str.length)
+puts &quot;#{str}#{spaces}&quot;
+end
+
+</pre>
+</body>
+</html>

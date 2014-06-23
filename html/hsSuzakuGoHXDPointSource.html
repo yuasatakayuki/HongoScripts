@@ -1,0 +1,126 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#20100125 Takayuki Yuasa ana/ changed to analysis/
+
+ScriptName=&quot;go_hxd_pointsource.sh&quot;
+
+############################################
+#Load modules
+############################################
+require &quot;optparse&quot;
+require &quot;fileutils&quot;
+
+
+############################################
+#Load related files
+############################################
+hongoscriptsdir=ENV[&#39;hongoscriptsdir&#39;]
+require &quot;#{hongoscriptsdir}/astrophysics/suzaku/<span style="text-decoration:line-through;color:blue;">AnalysisInformation.rb</span><span style="color:red;">ruby-suzaku-analysisinformation.rb</span>&quot;
+require &quot;#{hongoscriptsdir}/astrophysics/suzaku_hxd/<span style="text-decoration:line-through;color:blue;">HXDAnalysis.rb</span><span style="color:red;">ruby-suzaku-hxd.rb</span>&quot;
+require &quot;#{hongoscriptsdir}/astrophysics/suzaku_hxd/<span style="text-decoration:line-through;color:blue;">HXDFilenames.rb</span><span style="color:red;">ruby-suzaku-hxd-files.rb</span>&quot;
+require &quot;#{hongoscriptsdir}/astrophysics/suzaku_pin/<span style="text-decoration:line-through;color:blue;">PINFilenames.rb</span><span style="color:red;">ruby-suzaku-pin-files.rb</span>&quot;
+require &quot;#{hongoscriptsdir}/astrophysics/suzaku_pin/<span style="text-decoration:line-through;color:blue;">PINAnalysis.rb</span><span style="color:red;">ruby-suzaku-pin.rb</span>&quot;
+require &quot;#{hongoscriptsdir}/astrophysics/suzaku_gso/<span style="text-decoration:line-through;color:blue;">GSOAnalysis.rb</span><span style="color:red;">ruby-suzaku-gso.rb</span>&quot;
+require &quot;#{hongoscriptsdir}/astrophysics/suzaku_gso/<span style="text-decoration:line-through;color:blue;">GSOFilenames.rb</span><span style="color:red;">ruby-suzaku-gso-files.rb</span>&quot;
+
+############################################
+#Utility functions
+############################################
+def exitwithmessage()
+	print &quot;execute this with --help option...\n&quot;
+	exit
+end
+
+def showAppropriateDirectoryThenExit()
+	print &lt;&lt;EOS
+
+Command type and corresponding working directories are,
+  --command extract_spectra        : analysis/[pin/gso]/spectral_analysis/
+  --command extract_lightcurves    : analysis/[pin/gso]/lightcurve_analysis/
+  --command extract_powerspectrum  : analysis/[pin/gso]/lightcurve_analysis/.
+
+Please move (cd) to the appropriate directory, 
+and then, rerun the program again.
+Going along with the directory structure defined in
+HongoScripts is important to maintain your 
+easy-to-understand analysis environment!
+
+EOS
+end
+
+############################################
+#Define analysisinformation Instance
+############################################
+analysisinformation=AnalysisInformation.new
+analysisinformation.phasefilter=false
+
+############################################
+#Parse Options
+############################################
+options = OptionParser.new
+options.on(&quot;--detector pin or gso (must be provided)&quot;){ |value|
+	if(value!=&quot;pin&quot; and value!=&quot;gso&quot;)then
+		raise OptionParser::ParseError, &quot;detector name seems wrong...\n&quot;
+	end
+	analysisinformation.detector=value
+}
+options.on(&quot;--command one of \&quot;extract_spectra\&quot;, \&quot;extract_lightcurves\&quot;, and \&quot;extract_powerspectrum\&quot; (must be provided)&quot;){ |value|
+	if(value!=&quot;extract_spectra&quot; and value!=&quot;extract_lightcurves&quot; and value!=&quot;extract_powerspectrum&quot;)then
+		raise OptionParser::ParseError, &quot;command type seems wrong...\n&quot;
+	end
+	analysisinformation.command=value
+}
+options.on(&quot;--targetname name of the target (will appear in produced plots)&quot;){ |value| analysisinformation.targetname=value; }
+options.on(&quot;--tagname analysis tag name (must be provided)&quot;){ |value| analysisinformation.tagname=value; }
+options.on(&quot;--gtifile GTI filename&quot;){ |value| analysisinformation.gtifile=value; }
+options.on(&quot;--regionfile region filename&quot;){ |value| analysisinformation.regionfile=value; }
+options.on(&quot;--bintime bin size in sec (for lightcurves)&quot;){ |value| analysisinformation.bintime=value; }
+options.on(&quot;--pharange_lowerlimit VALUE&quot;){ |value| analysisinformation.pharange_lowerlimit=value; }
+options.on(&quot;--pharange_upperlimit VALUE&quot;){ |value| analysisinformation.pharange_upperlimit=value; }
+options.on(&quot;--energyrange_lowerlimit VALUE&quot;){ |value| analysisinformation.energyrange_lowerlimit=value; }
+options.on(&quot;--energyrange_upperlimit VALUE&quot;){ |value| analysisinformation.energyrange_upperlimit=value; }
+options.on(&quot;--phasefilter_epoch VALUE (in MJD)&quot;){ |value| analysisinformation.phasefilter_epoch=value; analysisinformation.phasefilter=true}
+options.on(&quot;--phasefilter_period VALUE (in Days)&quot;){ |value| analysisinformation.phasefilter_period=value; }
+options.on(&quot;--phasefilter_phase VALUE-VALUE (e.g. 0.1-0.25)&quot;){ |value| analysisinformation.phasefilter_phase=value; }
+options.on(&quot;--targetRA VALUE&quot;){ |value| analysisinformation.targetRA=value; }
+options.on(&quot;--targetDec VALUE&quot;){ |value| analysisinformation.targetDec=value; }
+options.on(&quot;--filteringcommandfile file which contains XSELECT filtering commands&quot;){ |value| analysisinformation.filteringcommandfile=value;}
+options.on(&quot;--dryrun true or false&quot;){ |value| analysisinformation.dryrun=value;}
+
+begin
+	############################################
+	#Execute Parser
+	############################################
+	options.parse!(ARGV) 
+
+	############################################
+	#Check if foldername, detector, command, and tagname are all given
+	############################################
+	if(analysisinformation.areAllMustOptionsSpecified()==false)then
+		raise OptionParser::ParseError, &quot;needed option are missing...\n&quot;
+	end
+rescue =&gt; exception #OptionParser::ParseError
+	print &quot;Exception!\n&quot;
+	print exception
+	exitwithmessage()
+end
+
+
+############################################
+#Execute
+############################################
+if(analysisinformation.detector==&quot;pin&quot;)then
+	pinanalysis=PINAnalysis.new(analysisinformation)
+	pinanalysis.executeCommand()
+elsif(analysisinformation.detector==&quot;gso&quot;)then
+	gsoanalysis=GSOAnalysis.new(analysisinformation)
+	gsoanalysis.executeCommand()
+else
+	raise &quot;--detectorname #{analysisinformation.detector} seems wrong...&quot;
+end
+</pre>
+</body>
+</html>

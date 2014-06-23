@@ -1,0 +1,35 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#20130712 Takayuki Yuasa
+
+if(ARGV.length==0)then
+ puts &quot;give a file containing mediawiki-formatted text&quot;
+ exit
+end
+
+for file in ARGV do
+ open(file).each(){|line|
+  regexp=/\[\[:*Media:(.*?)\]\]/
+  while(line=~regexp)do
+   puts Regexp.last_match[1].split(&quot;|&quot;)[0] if Regexp.last_match[1]!=nil
+   line.sub!(regexp,&quot;&quot;)
+  end
+  regexp=/\[\[:*File:(.*?)\]\]/
+  while(line=~regexp)do
+   puts Regexp.last_match[1].split(&quot;|&quot;)[0] if Regexp.last_match[1]!=nil
+   line.sub!(regexp,&quot;&quot;)
+  end
+  regexp=/\[\[:*Image:(.*?)\]\]/
+  while(line=~regexp)do
+   puts Regexp.last_match[1].split(&quot;|&quot;)[0] if Regexp.last_match[1]!=nil
+   line.sub!(regexp,&quot;&quot;)
+  end
+ }
+
+end
+</pre>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090602 Takayuki Yuasa
+
+if [ _$2 = _ ];
+then
+echo &quot;usage : <span style="text-decoration:line-through;color:blue;">pin_fake_cxb_auto.sh</span><span style="color:red;">hsPINFakeCXBAuto</span> (pi file;for response search) (output cxb filename)&quot;
+exit
+fi
+
+flatresp=`<span style="text-decoration:line-through;color:blue;">pin_find_flat_responsefile_auto.sh</span><span style="color:red;">hsPINFindFlatResponseFileAuto</span> $1`
+<span style="text-decoration:line-through;color:blue;">pin_fake_cxb.sh</span><span style="color:red;">hsPINFakeCXB</span> $flatresp $2
+</pre>
+</body>
+</html>

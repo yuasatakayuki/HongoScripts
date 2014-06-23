@@ -1,0 +1,66 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+if(ARGV.length==0)then
+	puts &lt;&lt;EOS
+Provide:
+	1: an Xspec log file containing equivalent width calculation
+	2: model component number of which equivalent width is retrieved from the log file
+	3: (optional) format string e.g. &quot;%5.2f&quot;
+EOS
+	exit
+end
+
+logFile=ARGV[0]
+nComponentARG=ARGV[1]
+formatString=&quot;%4.3f&quot;
+if(ARGV[2]!=nil)then
+	formatString=ARGV[2]
+end
+
+eqwEntries={}
+nComponent=0
+
+insideEqwEntry=false
+open(logFile).each(){|line|
+	if(insideEqwEntry and line.include?(&quot;XSPEC&quot;) and line.include?(&quot;&gt; &quot;))then
+		insideEqwEntry=false
+	end
+
+	if(!insideEqwEntry)then
+		if(line.include?(&quot;XSPEC&quot;) and line.include?(&quot;&gt; &quot;) and line.include?(&quot;eqw&quot;))then
+			insideEqwEntry=true
+			nComponent=line.split(&quot; &quot;)[2]
+			eqwEntries[nComponent]={}
+			next
+		end
+	end
+
+	if(insideEqwEntry)then
+		if(line.include?(&quot;Additive group equiv width&quot;))then
+			eqwEntries[nComponent][&quot;eqw&quot;]=line.split(&quot; &quot;)[-2].to_f*1000
+		end
+
+		if(line.include?(&quot;Equiv width error range&quot;))then
+			eqwEntries[nComponent][&quot;eqwMin&quot;]=line.split(&quot; &quot;)[-4].to_f*1000
+			eqwEntries[nComponent][&quot;eqwMax&quot;]=line.split(&quot; &quot;)[-2].to_f*1000
+		end
+	end
+
+}
+
+if(eqwEntries[nComponentARG]!=nil)then
+	puts &lt;&lt;EOS
+#{formatString%eqwEntries[nComponentARG][&quot;eqw&quot;]} ( #{formatString%eqwEntries[nComponentARG][&quot;eqwMin&quot;]} - #{formatString%eqwEntries[nComponentARG][&quot;eqwMax&quot;]} )
+EOS
+else
+	STDERR.puts &quot;Error: equivalent width for model component #{nComponentARG} is not found&quot;
+	STDERR.puts &quot;Message: equivalent width results found in the log are:&quot;
+	STDERR.puts eqwEntries
+	exit
+end
+</pre>
+</body>
+</html>

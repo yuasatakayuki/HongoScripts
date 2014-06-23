@@ -1,0 +1,19 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090313 Takayuki Yuasa
+
+if [ _$2 = _ ];
+then
+echo &quot;<span style="text-decoration:line-through;color:blue;">xis_create_detector_region.sh</span><span style="color:red;">hsXISCreateDetectorRegion</span> (xis fits file) (output region file)&quot;
+exit
+fi
+
+inputfile=$1
+outputfile=$2
+aemkreg -xis `<span style="text-decoration:line-through;color:blue;">mean_ea1.sh</span><span style="color:red;">hsFitsGetMeanEA1</span> $inputfile` `<span style="text-decoration:line-through;color:blue;">mean_ea2.sh</span><span style="color:red;">hsFitsGetMeanEA2</span> $inputfile` `<span style="text-decoration:line-through;color:blue;">mean_ea3.sh</span><span style="color:red;">hsFitsGetMeanEA3</span> $inputfile` &gt; $outputfile
+</pre>
+</body>
+</html>

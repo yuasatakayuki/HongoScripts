@@ -1,0 +1,25 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#20100827 Takayuki Yuasa
+
+if(ARGV.length!=4)then
+STDERR.puts &quot;give x1 y1 x2 y2 to calculate y=ax+b&quot;
+exit 
+end
+
+x1=ARGV[0].to_f
+y1=ARGV[1].to_f
+x2=ARGV[2].to_f
+y2=ARGV[3].to_f
+
+a=(y2-y1)/(x2-x1)
+b=y2-a*x2
+
+puts a
+puts b
+</pre>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20100602 Takayuki Yuasa
+
+if [ _$1 = _ ]; then
+name=`basename $0`
+cat &lt;&lt; EOF
+usage:
+$name (file) (variable type;optional)
+
+example:
+$name signals.vhdl &quot;unsigned char&quot;
+
+The input file should contain declarations of constant signals.
+This script outputs C++ style declaration converted from the input.
+
+Type of variables in the output can be provided via the second arg.
+The default type is &quot;unsigned int&quot;.
+EOF
+exit
+fi
+
+if [ ! -f $1 ]; then
+ echo &quot;file not found...exit&quot;
+ exit
+fi
+
+file=$1
+
+if [ _$2 = _ ]; then
+ type=&quot;unsigned int&quot;
+else
+ type=$2
+fi
+
+ruby &lt;&lt; EOF
+open(&quot;$file&quot;).each{|line|
+ line.chomp!
+ a=line.split(&quot; &quot;)
+ if(a[1]==nil)then
+  next
+ end
+ name=a[1].gsub(&quot; &quot;,&quot;&quot;).gsub(/\t/,&quot;&quot;)
+ b=line.split(&quot;:=&quot;)
+ if(b[-1]==nil)then
+  next
+ end
+ init_val=b[-1].gsub(&quot;;&quot;,&quot;&quot;)
+ init_val.downcase!
+ if(init_val.include?(&#39;x&quot;&#39;))then
+  init_val=&quot;0x&quot;+init_val.gsub(&#39;x&quot;&#39;,&quot;&quot;).gsub(&#39;&quot;&#39;,&quot;&quot;).gsub(&quot; &quot;,&quot;&quot;).gsub(/\t/,&quot;&quot;)
+ end
+ if(name!=&quot;&quot; and init_val!=&quot;&quot;)then
+  print &quot;static const $type #{name} = #{init_val};\n&quot;
+ end
+}
+
+EOF
+</pre>
+</body>
+</html>

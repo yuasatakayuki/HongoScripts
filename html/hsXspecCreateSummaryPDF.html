@@ -1,0 +1,33 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090612 Takayuki Yuasa modified from the previous PS implementation to use PDF
+
+if [ _$2 = _ ];
+then
+ echo &quot;usage : <span style="text-decoration:line-through;color:blue;">xspec_create_summary.sh</span><span style="color:red;">hsXspecCreateSummaryPDF</span> (spectral ps file) (xspec log file)&quot;
+ exit
+fi
+
+ps=$1
+log=$2
+dir=`dirname $ps`
+outpdf=$dir/`basename $ps .ps`_summary.pdf
+tmpps=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.ps
+tmppdf=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.pdf
+specpdf=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.pdf
+tmpallpdf=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.pdf
+
+<span style="text-decoration:line-through;color:blue;">a2ps.pl</span><span style="color:red;">hsAscii2Postscript</span> $2 &gt; $tmpps
+ps2pdf $ps $specpdf
+ps2pdf $tmpps $tmppdf
+pdftk $specpdf $tmppdf cat output $tmpallpdf
+pdfnup --nup 1x2 $tmpallpdf --no-landscape --outfile $outpdf
+
+rm $tmpps $tmppdf $specpdf $tmpallpdf
+
+</pre>
+</body>
+</html>

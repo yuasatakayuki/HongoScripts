@@ -1,0 +1,43 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env perl
+
+#MCA to DAT formatter
+#2006-05-08 Takayuki Yuasa
+#2007-09-01 Takayuki Yuasa bug fix
+#20100124 perl path fixed
+
+foreach $filename (@ARGV){
+	if(-f $filename and substr($filename,-4,4) eq &quot;.mca&quot;){
+		open(FILE,$filename);
+		@list=&lt;FILE&gt;;
+		close FILE;
+		$filename=~s/.mca/.dat/g;
+		open(FILE,&quot;&gt;&quot;.$filename);
+		$data_flag=0;
+		$channel_number=0;
+
+		foreach $line (@list){
+			if(index($line,&quot;&lt;&lt;END&gt;&gt;&quot;)==0){
+				$data_flag=0;
+		    }
+			if($data_flag==1 and $line ne &quot;&lt;&lt;END&gt;&gt;\n&quot;){
+				print FILE $channel_number.&quot; &quot;.$line;
+				$channel_number++;
+			}
+			if(index($line,&quot;&lt;&lt;DATA&gt;&gt;&quot;)==0){
+				$data_flag=1;
+		    }
+	
+		}
+		close FILE;
+		print $filename.&quot; was created!\n&quot;;
+	}else{
+		if(-f $filename){}else{print &quot;warning:$filename doesnot exist...\n&quot;;}
+		if(index($filename,&quot;mca&quot;)=&gt;0){}else{print &quot;warning:$filename isnot a mca file...\n&quot;;}
+	}
+}
+</pre>
+</body>
+</html>

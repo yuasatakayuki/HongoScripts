@@ -1,0 +1,25 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090304 Takayuki Yuasa
+
+#<span style="text-decoration:line-through;color:blue;">pin_merge_gtis.sh</span><span style="color:red;">hsPINMergeGTI</span> &quot;infile1+2&quot; &quot;infile2+2&quot; outfile 
+
+if [ _$3 = _ ];
+then
+echo &quot;usage : <span style="text-decoration:line-through;color:blue;">pin_merge_gtis.sh</span><span style="color:red;">hsPINMergeGTI</span> \&quot;infile1+2\&quot; \&quot;infile2+2\&quot; outfile&quot;
+exit
+fi
+
+mgtime ingtis=&quot;$1,$2&quot; outgti=&quot;!$3&quot; merge=&quot;AND&quot; 
+
+#log
+cat &lt;&lt; EOF &gt; ${3}.log
+current directory = `pwd`
+mgtime ingtis=&quot;$1,$2&quot; outgti=&quot;$3&quot; merge=&quot;AND&quot;
+EOF
+</pre>
+</body>
+</html>

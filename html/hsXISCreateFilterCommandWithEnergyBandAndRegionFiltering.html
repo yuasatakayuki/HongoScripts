@@ -1,0 +1,47 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090901 Takayuki Yuasa
+
+if [ _$4 = _ ];
+then
+
+echo &quot;<span style="text-decoration:line-through;color:blue;">xis_create_filter_commands_with_energy_band_and_region_file.sh</span><span style="color:red;">hsXISCreateFilterCommandWithEnergyBandAndRegionFiltering</span> (output filter command text file) (region file; or none) (energy cut low in keV;or none) (energy cut high in keV;or none)&quot;
+exit
+
+fi
+
+#parameters
+outputfile=$1
+regionfile=$2
+elow=$3
+ehigh=$4
+
+#delete existing file
+rm -f $outputfile
+
+#filtering condition
+if [ $elow != &quot;none&quot; -a $ehigh != &quot;none&quot; ];
+then
+phalow=`<span style="text-decoration:line-through;color:blue;">xis_energy_to_pi.sh</span><span style="color:red;">hsXISEnergyToPI</span> $elow`
+phahigh=`<span style="text-decoration:line-through;color:blue;">xis_energy_to_pi.sh</span><span style="color:red;">hsXISEnergyToPI</span> $ehigh`
+echo &quot;filter pha_cut $phalow $phahigh&quot; &gt; $outputfile
+echo &quot;!this means ${elow} keV to ${ehigh} keV&quot; &gt;&gt; $outputfile
+fi
+
+if [ $regionfile != &quot;none&quot; ];
+then
+
+if [ ! -f $regionfile ];
+then
+echo &quot;region file not found...exit&quot;
+exit
+fi
+
+echo &quot;filter region $regionfile&quot; &gt;&gt; $outputfile
+fi
+</pre>
+</body>
+</html>

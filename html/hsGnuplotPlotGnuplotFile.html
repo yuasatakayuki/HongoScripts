@@ -1,0 +1,60 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20100714 Takayuki Yuasa
+
+if [ _$1 = _ ]; then
+cat &lt;&lt; EOF
+usage : `basename $0` (gnuplot command file with &quot;.gp&quot; suffix) (&quot;color&quot; or &quot;grayscale&quot;;default &quot;color&quot;) (font size;optional, default=18)
+This script creates a pdf file from a gnuplot&#39;s command file.
+The command file must have .gp suffix. The saved pdf has the
+same file prefix as the command file.
+For example, if &quot;kT_vs_Z.gp&quot; is provided, the plot is saved 
+as &quot;kT_vs_Z.pdf&quot;.
+
+The set terminal option can be passed  
+EOF
+exit
+fi
+
+if [ ! -f $1 ]; then
+echo &quot;file not found...exit&quot;
+exit
+fi
+
+if [ _$2 != _ ]; then
+ if [ $2 = &quot;color&quot; ]; then
+  color=&quot;col&quot;
+ elif [ $2 = &quot;grayscale&quot; ]; then
+  color=&quot;&quot;
+ else
+  color=&quot;col&quot;
+ fi
+else
+color=&quot;col&quot;
+fi
+
+if [ _$3 = _ ]; then
+fontsize=18
+else
+fontsize=$3
+fi
+
+outputpsfile=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.ps
+
+gnuplot &lt;&lt; EOF
+load &quot;$1&quot;
+set terminal post $color &quot;Times&quot; $fontsize
+set out &quot;$outputpsfile&quot;
+replot
+exit
+EOF
+
+ps2pdf $outputpsfile
+rm $outputpsfile
+mv `basename $outputpsfile .ps`.pdf `dirname $1`/`basename $1 .gp`.pdf
+</pre>
+</body>
+</html>

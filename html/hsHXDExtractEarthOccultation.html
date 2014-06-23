@@ -1,0 +1,100 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20130723 Takayuki Yuasa
+
+if [ _$3 = _ ]; then
+cat &lt;&lt; EOF
+give the following arguments:
+  1: a relative path to suzaku data folder (e.g. ../../data/408018020).
+  2: pin/gso
+  3: output file name (e.g pinEarthOccultation.evt)
+EOF
+exit
+fi
+
+eventUFDir=$1/hxd/event_uf
+auxilDir=$1/auxil
+
+if [ ! -d $1 ]; then
+echo &quot;$1 is not found...&quot;
+exit
+fi
+
+if [ ! -d $eventUFDir ]; then
+echo &quot;hxd event_uf folder is not found.&quot;
+exit
+fi
+
+if [ ! -d $auxilDir ]; then
+echo &quot;auxil folder is not found.&quot;
+exit
+fi
+
+detector=$2
+outputFile=$3
+
+
+#
+# detType
+#  0 = gso
+#  1 = pin
+#  2 = pseudo
+#
+
+detType=1
+if [ $detector = gso ]; then
+ detType=0
+fi
+
+eventFileList=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`
+
+echo &quot;Creatint a unfiltered event file list...&quot;
+ls $eventUFDir/ae*hxd*wel_uf* &gt; $eventFileList
+cat $eventFileList
+
+echo &quot;Searching an EHK file...&quot;
+ehkFile=`ls $auxilDir/ae*ehk 2&gt; /dev/null`
+if [ _$ehkFile = _ ]; then
+echo &quot;ehk file was not found in $auxliDir.&quot;
+exit
+fi
+echo &quot;found at $ehkFile&quot;
+
+rm -f $outputFile
+
+#judge if absolute path
+readPath=&quot;./&quot;
+isAbsolutePath=`<span style="text-decoration:line-through;color:blue;">wsFileContainsAbsolutePath</span><span style="color:red;">hsFileContainsAbsolutePath</span> $eventFileList`
+if [ _$isAbsolutePath = _true ]; then
+readPath=&quot;/&quot;
+fi
+
+echo &quot;---------------------------------------------&quot;
+echo &quot;Filtering with XSELECT&quot;
+echo &quot;---------------------------------------------&quot;
+xselect &lt;&lt; EOF
+
+read event @$eventFileList $readPath
+read hk
+.
+$ehkFile
+
+filter column &quot;DET_TYPE=$detType:$detType&quot;
+filter hk 
+SAA_HXD==0 &amp;&amp; T_SAA_HXD&gt;500 &amp;&amp; TN_SAA_HXD&gt;180 &amp;&amp; COR&gt;6 &amp;&amp; ELV &lt; 5
+
+extract event
+
+save event $outputFile
+n
+exit
+
+EOF
+
+rm $eventFileList
+</pre>
+</body>
+</html>

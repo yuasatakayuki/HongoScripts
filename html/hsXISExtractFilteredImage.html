@@ -1,0 +1,70 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#<span style="text-decoration:line-through;color:blue;">xis_extract_raw_images.sh</span><span style="color:red;">hsXISExtractRawImage</span>
+#20090312 Takayuki Yuasa
+
+if [ _$3 = _ ];
+then
+echo &quot;<span style="text-decoration:line-through;color:blue;">xis_extract_filtered_images.sh</span><span style="color:red;">hsXISExtractFilteredImage</span> (input event file) (output image file) (region file) (extra condition file;optional)&quot;
+exit
+fi
+
+pwd=`pwd`
+indexof=`<span style="text-decoration:line-through;color:blue;">indexof.pl</span><span style="color:red;">hsStringIndex</span> &quot;$pwd&quot; &quot;xis/image_analysis&quot;`
+if [ $indexof == -1 ];
+then
+echo &quot;run this script at analysis/xis/image_analysis/ folder.&quot;
+exit
+fi
+
+evtfile=$1
+outputdir=`dirname $2`
+outputfile=`basename $2`
+regionfile=$3
+
+if [ _$4 = _ ];
+then
+extra=&quot;&quot;
+else
+extra=`cat $4`
+fi
+
+logfile=$outputdir/`basename $outputfile`.log
+
+mkdir -p $outputdir
+
+xselect &lt;&lt; EOF 2&gt;&amp;1 | tee -a $logfile
+
+no
+read event $evtfile ./
+
+filter region $regionfile
+$extra
+
+set xybinsize 1
+extract image
+save image $outputdir/$outputfile
+save image $outputdir/`basename $outputfile .img`_bin1.img
+
+set xybinsize 2
+extract image
+save image $outputdir/`basename $outputfile .img`_bin2.img
+
+set xybinsize 4
+extract image
+save image $outputdir/`basename $outputfile .img`_bin4.img
+
+set xybinsize 8
+extract image
+save image $outputdir/`basename $outputfile .img`_bin8.img
+
+exit
+
+
+EOF
+</pre>
+</body>
+</html>

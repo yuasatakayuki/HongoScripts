@@ -1,0 +1,39 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090522 Takayuki Yuasa updated
+
+if [ _$1 = _ ];
+then
+echo &quot;<span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> FILE (value)&quot;
+exit
+fi
+
+file=$1
+tmp=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.fits
+ln -s $file $tmp
+
+if [ _$2 = _ ];
+then
+
+i=`<span style="text-decoration:line-through;color:blue;">fits_has_header_keyword.sh</span><span style="color:red;">hsFitsIsHeaderKeywordDefined</span> $tmp EXPOSURE`
+
+if [ _$i != _ ]; then
+<span style="text-decoration:line-through;color:blue;">getheader.sh</span><span style="color:red;">hsFitsGetHeader</span> $tmp $i exposure
+fi
+
+else
+
+<span style="text-decoration:line-through;color:blue;">setheader.sh</span><span style="color:red;">hsFitsSetHeader</span> $tmp 0 exposure $2
+<span style="text-decoration:line-through;color:blue;">setheader.sh</span><span style="color:red;">hsFitsSetHeader</span> $tmp 1 exposure $2
+<span style="text-decoration:line-through;color:blue;">setheader.sh</span><span style="color:red;">hsFitsSetHeader</span> $tmp 2 exposure $2
+
+fi
+
+
+rm -r $tmp
+</pre>
+</body>
+</html>

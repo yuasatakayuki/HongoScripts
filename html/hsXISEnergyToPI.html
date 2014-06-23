@@ -1,0 +1,18 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090312 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo &quot;<span style="text-decoration:line-through;color:blue;">xis_energy_to_pi.sh</span><span style="color:red;">hsXISEnergyToPI</span> (energy in keV)&quot;
+echo &quot;e.g. <span style="text-decoration:line-through;color:blue;">xis_energy_to_pi.sh</span><span style="color:red;">hsXISEnergyToPI</span> 6.4&quot;
+exit
+fi
+
+calc &quot;int($1*1000/3.65)+1&quot;
+</pre>
+</body>
+</html>

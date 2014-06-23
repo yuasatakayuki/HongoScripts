@@ -1,0 +1,55 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#2013-08-29 Takayuki Yuasa
+
+caption=&quot;&quot;
+label=&quot;&quot;
+file=&quot;&quot;
+width=&quot;&quot;
+height=&quot;&quot;
+
+sizeOption=[]
+
+for option in ARGV do
+	if(option.include?(&quot;caption=&quot;))then
+		caption=option.gsub(&quot;caption=&quot;,&quot;&quot;)
+	end
+
+	if(option.include?(&quot;file=&quot;))then
+		file=option.gsub(&quot;file=&quot;,&quot;&quot;)
+	end
+
+	if(option.include?(&quot;width=&quot;))then
+		width=option.gsub(&quot;width=&quot;,&quot;&quot;)
+		if(width.include?(&quot;hsize&quot;))then
+			sizeOption &lt;&lt; &quot;width=\\hsize&quot;
+		else
+			sizeOption &lt;&lt; &quot;width=#{width}&quot;
+		end
+	end
+
+	if(option.include?(&quot;height=&quot;))then
+		height=option.gsub(&quot;height=&quot;,&quot;&quot;)
+		sizeOption &lt;&lt; &quot;height=#{height}&quot;
+	end
+
+	if(option.include?(&quot;label=&quot;))then
+		label=option.gsub(&quot;label=&quot;,&quot;&quot;)
+	end
+end
+
+puts &lt;&lt;EOS
+\\begin{figure}[htb]
+	\\begin{center}
+		\\includegraphics[#{sizeOption.join(&quot;,&quot;)}]{#{file}}
+		\\caption{#{caption}}
+		\\label{#{label}}
+	\\end{center}
+\\end{figure}
+EOS
+</pre>
+</body>
+</html>

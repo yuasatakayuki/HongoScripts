@@ -1,0 +1,51 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090313 Takayuki Yuasa
+#20090706 Takayuki Yuasa copied from <span style="text-decoration:line-through;color:blue;">xis_create_region_file_for.sh</span><span style="color:red;">hsXISCreateRegionFileFor</span>
+
+if [ _$2 = _ ];
+then
+echo &quot;<span style="text-decoration:line-through;color:blue;">xis_create_bgd_region_file_for.sh</span><span style="color:red;">hsXISCreateBGDRegionFile</span> (input fits file) (output region filename) (inner radius in arcsec;optional, default=180) (outer radius;option, default=270)&quot;
+exit
+fi
+
+inputfile=$1
+outputfile=$2
+
+mkdir `dirname $outputfile` &amp;&gt; /dev/null
+
+if [ _$3 = _ ];
+then
+r_in=180
+else
+r_in=$3
+fi
+
+if [ _$4 = _ ];
+then
+r_out=270
+else
+r_out=$4
+fi
+
+
+tmp=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`
+
+ra=`<span style="text-decoration:line-through;color:blue;">ra_obj.sh</span><span style="color:red;">hsFitsGetRAOBJ</span> $inputfile`
+dec=`<span style="text-decoration:line-through;color:blue;">dec_obj.sh</span><span style="color:red;">hsGetFitsDecObj</span> $inputfile`
+
+cat &lt;&lt; EOF &gt; $tmp
+# Region file format: DS9 version 4.0
+# Filename: FILENAME
+global color=green font=&quot;helvetica 10 normal&quot; select=1 highlite=1 edit=1 move=1 delete=1 include=1 fixed=0 source
+fk5
+annulus(${ra},${dec},${r_in}&quot;,${r_out}&quot;)
+EOF
+
+mv $tmp $outputfile
+</pre>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20100809 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo &quot;<span style="text-decoration:line-through;color:blue;">dec_nom.sh</span><span style="color:red;">hsGetFitsDecNom</span> FILE&quot;
+exit
+fi
+
+i=`<span style="text-decoration:line-through;color:blue;">fits_has_header_keyword.sh</span><span style="color:red;">hsFitsIsHeaderKeywordDefined</span> $1 dec_nom`
+if [ _$i != _ ]; then
+<span style="text-decoration:line-through;color:blue;">getheader.sh</span><span style="color:red;">hsFitsGetHeader</span> $1 $i DEC_NOM
+fi
+</pre>
+</body>
+</html>

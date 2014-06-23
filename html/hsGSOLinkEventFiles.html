@@ -1,0 +1,157 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+
+#20090304 Shin&#39;ya Yamada
+#20090511 Takayuki Yuasa unzipping before reprocess
+#20100121 Takayuki Yuasa link to cleaned event fixed according to Shinya Yamada&#39;s comment
+#20120928 Soki Sakurai modified arguments to aepipeline
+
+if [ _$1 = _ ];
+then
+echo &quot;<span style="text-decoration:line-through;color:blue;">gso_link_event.sh</span><span style="color:red;">hsGSOLinkEventFiles</span> PATH_TO_DATA&quot;
+echo &quot;e.g. <span style="text-decoration:line-through;color:blue;">gso_link_event.sh</span><span style="color:red;">hsGSOLinkEventFiles</span> ../../data/403023010&quot;
+exit
+fi
+
+obsid=`basename $1`
+
+echo gso_link_event_newhdpi.sh : obsid = $obsid
+
+#check CALDB environment variables
+#<span style="text-decoration:line-through;color:blue;">suzaku_check_caldb_variables.sh</span><span style="color:red;">hsSuzakuCheckIfCALDBVariableDefined</span>
+#if [ $? != 0 ];
+#then
+#echo &quot;exit...&quot;
+#exit
+#fi
+
+mkdir data &amp;&gt; /dev/null
+
+event_cl=$1/hxd/event_cl
+event_uf=$1/hxd/event_uf
+
+hxdhk=$1/hxd/hk
+auxil=$1/auxil
+
+event_uf_repro=$1/hxd/event_uf_repro
+
+mkdir -p ${event_uf_repro}
+
+ln -sf $event_cl
+ln -sf $event_uf
+ln -sf $hxdhk hxdhk
+ln -sf $auxil
+ln -sf ${event_uf_repro}
+
+for dir in event_cl event_uf hxdhk auxil;
+do
+
+cd $dir
+for file in `ls *gz 2&gt; /dev/null`;
+do
+echo &quot;unzipping : $file&quot;
+gzip -d $file
+done
+cd - &amp;&gt; /dev/null
+
+done
+# reprocess
+
+
+## link hxdhk files (uf tel. and gti )
+cd event_uf
+ln -fs ../hk/*.hk .
+ln -fs ../hk/*.gti .
+ls 
+cd ..
+
+dateobs=`<span style="text-decoration:line-through;color:blue;">date_obs.sh</span><span style="color:red;">hsFitsGetDateObs</span> ./auxil/ae${obsid}.hk`
+year=`ruby -e &quot;print ARGV[0].split(&#39;-&#39;)[0]&quot; $dateobs`
+month=`ruby -e &quot;print ARGV[0].split(&#39;-&#39;)[1]&quot; $dateobs`
+
+reprocessed=0
+if [ ${year} -gt 2010 ]; then
+echo &quot;Skipped reprocessing...&quot;
+currentdir=`pwd`
+cd $1/../${obsid}/hxd
+ln -sf event_cl event_uf_repro
+cd $currentdir
+elif [ ${year} -lt 2010 ]; then
+currentdir=`pwd`
+cd $1/../
+aepipeline indir=$obsid outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO clobber=yes hxd_gsogpt=${CALDB}/data/suzaku/hxd/bcf/ae_hxd_gsogpt_20100323.fits
+mv event_uf_repro ${obsid}/hxd/
+cd $currentdir
+reprocessed=1
+elif [ ${month} -lt 3 ]; then
+currentdir=`pwd`
+cd $1/../
+aepipeline indir=$obsid outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO clobber=yes hxd_gsogpt=${CALDB}/data/suzaku/hxd/bcf/ae_hxd_gsogpt_20100323.fits
+mv event_uf_repro ${obsid}/hxd/
+cd $currentdir
+reprocessed=1
+else
+echo &quot;Skipped reprocessing...&quot;
+currentdir=`pwd`
+cd $1/../${obsid}/hxd
+ln -sf event_cl event_uf_repro
+cd $currentdir
+fi
+
+
+#aepipeline indir=event_uf outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO chatter=3 clobber=yes hxdpi_old=no attitude=./auxil/ae${obsid}.att housekeeping=./auxil/ae${obsid}.hk extended_housekeeping=./auxil/ae${obsid}.ehk makefilter=./auxil/ae${obsid}.mkf orbit=./auxil/ae${obsid}.orb timfile=./auxil/ae${obsid}.tim
+#currentdir=`pwd`
+#cd $1/../
+#aepipeline indir=$obsid outdir=event_uf_repro steminputs=ae${obsid} entry_stage=1 exit_stage=2 instrument=GSO clobber=yes
+#cd $currentdir
+
+##check if uff_0 exists
+#uff_0=`ls event_uf_repro/ae*hxd_0_wel_uf*`
+#if [ _${uff_0} = _ ];
+#then
+#<span style="text-decoration:line-through;color:blue;">hxd_merge_uff.sh</span><span style="color:red;">hsHXDMergeUFFiles</span> ae*hxd_?_wel_uf*
+#fi
+#
+#<span style="text-decoration:line-through;color:blue;">HS_extract_cleanGSO.sh</span><span style="color:red;">hsHXDExtractCleanGSO</span>
+#
+#cd - &amp;&gt; /dev/null
+#
+
+#link event files
+cd data/
+rm -f gso_evt.evt pseudo.evt uff.evt
+
+#miss! NG
+#ln -sf ../event_cl/*gsono*evt gso_evt.evt
+
+#Good
+ln -sf ../event_uf_repro/ae*hxd_0_gsono_cl.evt gso_evt.evt
+
+ln -sf ../event_cl/*pse*evt pseudo.evt
+# ln -sf ../event_uf_repro/*hxd_0_wel_uf*evt uff_repro.evt
+cd - &amp;&gt; /dev/null
+
+bgd=../../data/bgd
+ln -sf $bgd
+cd data
+
+rm -f gso_nxb.evt
+ln -sf `ls ../bgd/*gsobgd* | tail -1 2&gt; /dev/null` gso_nxb.evt
+if [ -f gso_nxb.evt ];
+then
+echo &quot;&quot;
+else
+echo &quot;Error : NXB file not found&quot;
+fi
+cd - &amp;&gt; /dev/null
+
+
+pushd spectral_analysis &amp;&gt; /dev/null
+<span style="text-decoration:line-through;color:blue;">gso_download_arf.rb</span><span style="color:red;">hsGSODownloadARF</span>
+popd &amp;&gt; /dev/null
+</pre>
+</body>
+</html>

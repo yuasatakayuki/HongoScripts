@@ -1,0 +1,49 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090403 Takayuki Yuasa
+
+if [ _$2 = _ ];
+then
+echo &quot;usage : <span style="text-decoration:line-through;color:blue;">pin_find_nxbfile.sh</span><span style="color:red;">hsPINFindNXBFile</span> (PIN fits file;evt or pi) (quick or tuned)&quot;
+echo &quot;if there is no nxb file yet, a string &#39;none&#39; will be returned.&quot;
+exit
+fi
+
+file=$1
+type=$2
+
+
+obsid=`<span style="text-decoration:line-through;color:blue;">getheader.sh</span><span style="color:red;">hsFitsGetHeader</span> $file 0 obs_id`
+dateobs=`<span style="text-decoration:line-through;color:blue;">date_obs.sh</span><span style="color:red;">hsFitsGetDateObs</span> $file`
+
+year=`ruby -e &quot;print ARGV[0].split(&#39;-&#39;)[0]&quot; $dateobs`
+month=`ruby -e &quot;print ARGV[0].split(&#39;-&#39;)[1]&quot; $dateobs`
+
+version22StartYearMonth=201208
+
+nxbVersion=`ruby -e &quot;if($year$month&gt;$version22StartYearMonth)then puts 2.0; else puts 2.2; end&quot;`
+
+quickurl=http://www.astro.isas.ac.jp/suzaku/analysis/hxd/pinnxb/pinnxb_ver2.0/
+tunedurl=http://www.astro.isas.ac.jp/suzaku/analysis/hxd/pinnxb/pinnxb_ver${nxbVersion}_tuned/
+
+#echo &quot;searching PIN $type NXB for OBSID:$obsid (${year}-${month})&quot;
+
+if [ $type = quick ];
+then
+echo &quot;$quickurl/${year}_${month}/ae${obsid}hxd_pinnxb_cl.evt.gz&quot;
+exit
+fi
+
+if [ $type = tuned ];
+then
+echo &quot;$tunedurl/${year}_${month}/ae${obsid}_hxd_pinbgd.evt.gz&quot;
+exit
+fi
+
+echo &quot;none&quot;
+</pre>
+</body>
+</html>

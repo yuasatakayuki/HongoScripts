@@ -1,0 +1,114 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090408 Takayuki Yuasa
+#20090526 Takayuki Yuasa cpd deleted (xspec no window mode)
+
+if [ _${2} = _ ];
+then
+cat &lt;&lt; EOF
+<span style="text-decoration:line-through;color:blue;">suzaku_create_spectra_check_plot.sh</span><span style="color:red;">hsSuzakuCreateSpectrumCheckPlot</span> (plot xcm file) (output pdf file name)
+EOF
+exit
+fi
+
+pwd=`pwd`
+if [ `basename $pwd` != simultaneous ];
+then
+echo &quot;please execute this command inside &#39;analysis/simultaneous&#39; folder&quot;
+exit
+fi
+
+#parameter set
+xcmfile=$1
+outputpdffile=$2
+
+outputps=`dirname $outputpdffile`/`basename $outputpdffile .pdf`.ps
+outputplotxcm=`dirname $outputpdffile`/`basename $outputpdffile .pdf`_plot.xcm
+outputqdp=`dirname $outputpdffile`/`basename $outputpdffile .pdf`.qdp
+outputpco=`dirname $outputpdffile`/`basename $outputpdffile .pdf`.pco
+output=`dirname $outputpdffile`/`basename $outputpdffile .pdf`
+logfile=${outputpdffile}.log
+
+#xspec nowindow mode
+export PGPLOT_TYPE=&quot;&quot;
+
+
+mkdir -p `dirname $outputpdffile` &amp;&gt; /dev/null
+
+tmp_xispifile=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`
+tmp_pinpifile=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`
+
+#get xis pi filename
+ruby &lt;&lt; EOF &gt; ${tmp_xispifile}
+line=&quot;`grep data $xcmfile | grep xis - | head -1`&quot;
+array=line.split(&quot; &quot;)
+array.each{|node|
+ if(node.include?(&quot;xis&quot;))then
+  print &quot;#{node}&quot;
+  exit
+ end
+}
+EOF
+xispifile=`cat ${tmp_xispifile}`
+
+#get pin pi filename
+ruby &lt;&lt; EOF &gt; ${tmp_pinpifile}
+line=&quot;`grep data $xcmfile | grep pin - | head -1`&quot;
+array=line.split(&quot; &quot;)
+array.each{|node|
+ if(node.include?(&quot;pin&quot;))then
+  print &quot;#{node}&quot;
+  exit
+ end
+}
+EOF
+pinpifile=`cat ${tmp_pinpifile}`
+
+rm -f $tmp_xispifile $tmp_pinpifile
+
+
+#exposure, target name
+target=`<span style="text-decoration:line-through;color:blue;">targetname.sh</span><span style="color:red;">hsFitsGetTargetName</span> $pinpifile`
+pinexposure=`<span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $pinpifile`
+pinexposure=`calc $pinexposure/1000`
+xisexposure=`<span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $xispifile`
+xisexposure=`calc $xisexposure/1000`
+
+cat $xcmfile &gt; $outputplotxcm
+cat &lt;&lt; EOF &gt;&gt; $outputplotxcm
+iplot
+ti off
+cs 1.3
+lwidth 3
+lwidth 3 on 1..50
+la t
+la f $target (XIS=$xisexposure ks, PIN=$pinexposure ks)
+la y Counts s\u-1\d keV\u-1
+la x Energy keV
+fo ro
+hard $outputps/cps
+we $output
+exit
+
+exit
+yes
+
+EOF
+
+rm -f $outputpco $outputqdp
+
+xspec &lt; $outputplotxcm 2&gt;&amp;1 | tee $logfile
+
+#ps2pdf
+echo &quot;ps2pdf&quot;
+echo &quot;cd `dirname $outputpdffile`&quot;
+cd `dirname $outputpdffile`
+ps2pdf `basename $outputps`
+cd -
+
+</pre>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+if [ _$4 = _ ];
+then
+
+echo &quot;give infile, extension, keyword, and value&quot;
+echo &quot;ex. <span style="text-decoration:line-through;color:blue;">setheader.sh</span><span style="color:red;">hsFitsSetHeader</span> spectrum.pha 1 BACKSCAL 0.1&quot;
+exit
+
+fi
+
+infile=$1
+extension=$2
+keyword=$3
+value=$4
+
+fparkey $value ${infile}+${extension} $keyword
+</pre>
+</body>
+</html>

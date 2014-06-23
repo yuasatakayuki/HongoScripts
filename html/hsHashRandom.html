@@ -1,0 +1,21 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#20090304 Takayuki Yuasa
+#20100124 perl path fixed
+#20100125 short hash is adopted and the prefix &quot;temporary_&quot; will be provided
+#20100809 Takayuki Yuasa longer random part
+#20120828 Takayuki Yuasa changed to use ruby
+
+require &#39;digest/sha2&#39;
+
+
+ctime=Time.now
+str=&quot;#{ctime.day}#{ctime.month}#{ctime.usec}#{ctime.sec}&quot;
+hash=Digest::SHA256.hexdigest(str)[0..5]
+print &quot;temporary_#{hash}\n&quot;
+</pre>
+</body>
+</html>

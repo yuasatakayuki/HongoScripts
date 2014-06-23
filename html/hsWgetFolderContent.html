@@ -1,0 +1,26 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#2013-10-22 Takayuki Yuasa
+
+# wget --no-host-directories --cut-dirs=5 -A gz -r -np http://darts.isas.jaxa.jp/pub/suzaku/ver2.0/401050050/xis/event_cl/
+
+if(ARGV.length==0)then
+	puts &quot;give a download url.&quot;
+	exit
+end
+
+url=ARGV[0]
+
+folderPath=url.split(&quot;//&quot;)[1].split(&quot;/&quot;)
+folderDepth=folderPath.length-2
+if(folderDepth&lt;0)then
+	folderDepth=0
+end
+
+`wget --no-host-directories --cut-dirs=#{folderDepth} -A gz -r -np #{url}`
+</pre>
+</body>
+</html>

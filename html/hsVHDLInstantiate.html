@@ -1,0 +1,78 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20100601 Takayuki Yuasa
+
+if [ _$1 = _ ]; then
+name=`basename $0`
+cat &lt;&lt; EOF
+usage:
+$name (file)
+
+The input file should contain component declaration
+or entity declaration of a vhdl module. This script
+extract signal names, and then connect them to signals
+that have the same names as the entities.
+EOF
+exit
+fi
+
+if [ ! -f $1 ]; then
+ echo &quot;file not found...exit&quot;
+ exit
+fi
+
+file=$1
+
+ruby &lt;&lt; EOF
+flag=false
+signals=[]
+connections=[]
+componentname=&quot;&quot;
+open(&quot;$file&quot;).each {|line|
+ head=line.split(&quot; &quot;)[0]
+ if(head==nil)then
+  next
+ end
+ if(flag==true and (!head.include?(&quot;--&quot;)) and (!head.include?(&quot;)&quot;)) and (!head.include?(&quot;end&quot;)) )then
+  a=line.split(&quot; &quot;)[0].split(&quot;:&quot;)
+  connections.push(&quot;#{a[0]} =&gt; #{a[0]},&quot;)
+  line=line.downcase
+  line2=line.gsub(&quot;:in&quot;,&quot;: in&quot;).gsub(&quot;:out&quot;,&quot;: out&quot;)
+  b=line2.split(&quot; in &quot;)[-1].split(&quot; out &quot;)[-1]
+  if(!b.include?(&quot;;&quot;))then
+   b[b.length-1,1]=&quot;;&quot;
+  end
+  signals.push(&quot;signal #{a[0]} : #{b}&quot;)
+ end
+ if(line.include?(&quot;component &quot;) and flag==false)then
+  componentname=line.split(&quot; &quot;)[1]
+ end
+ if(line.include?(&quot;entity &quot;) and flag==false)then
+  componentname=line.split(&quot; &quot;)[1]
+ end
+ if(line.include?(&quot;port&quot;) and line.include?(&quot;(&quot;))then
+  flag=true
+ end
+}
+
+print_signals=signals.join()
+print_connections=connections.join(&quot;\n &quot;)
+i=print_connections.rindex(&quot;,&quot;)
+print_connections[i,1]=&quot; &quot;
+
+print &lt;&lt;EOS
+#{print_signals}
+
+instanceOf#{componentname} : #{componentname}
+port map(
+ #{print_connections}
+);
+EOS
+
+EOF
+</pre>
+</body>
+</html>

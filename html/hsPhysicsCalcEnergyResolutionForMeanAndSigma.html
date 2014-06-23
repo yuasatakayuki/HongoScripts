@@ -1,0 +1,25 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#20100827 Takayuki Yuasa
+
+if(ARGV.length&lt;2)then
+STDERR.puts &quot;give energy mean and sigma (offset is optional)&quot;
+exit 
+end
+
+mean=ARGV[0].to_f
+sigma=ARGV[1].to_f
+offset=0
+if(ARGV.length==3)then
+offset=ARGV[2].to_f
+end
+
+eres=2.35*sigma/(mean-offset)
+
+puts eres
+</pre>
+</body>
+</html>

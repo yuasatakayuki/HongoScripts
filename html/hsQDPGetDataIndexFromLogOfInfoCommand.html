@@ -1,0 +1,60 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#20100302 Takayuki Yuasa
+
+#retrieve plot index (number) of a certain data set
+
+if(ARGV.length&lt;2)then
+print &quot;<span style="text-decoration:line-through;color:blue;">qdp_get_plot_index_of_a_dataset_from_a_log_of_info_command.rb</span><span style="color:red;">hsQDPGetDataIndexFromLogOfInfoCommand</span> (log file of info command) (data set number)\n&quot;
+exit
+end
+
+logfile=ARGV[0]
+requireddatasetNumber=ARGV[1].to_i()
+
+if(!File.exist?(logfile))then
+print &quot;log file &#39;#{logfile}&#39; does not exist...exit\n&quot;
+exit
+end
+
+info_started=false
+grp_started=false
+info_array=[]
+open(logfile).each{|line|
+ if(grp_started)then
+  info_array.push(line)
+ end
+ if(line.include?(&quot;info&quot;))then
+  info_started=true
+ end
+ if(info_started==true and line.include?(&quot;Grp&quot;))then
+  grp_started=true
+ end
+}
+
+datasetindexes=[]
+vmin=0
+vmax=0
+info_array.each{|line|
+ array=line.split(&quot; &quot;)
+ index=array[0]
+ min=array[3]
+ max=array[5]
+ if(vmin!=min and vmax!=max)then
+  vmin=min
+  vmax=max
+  datasetindexes.push(index)
+ end
+}
+
+if(requireddatasetNumber&lt;=datasetindexes.length)then
+ print datasetindexes[requireddatasetNumber-1]
+else
+ print 0
+end
+</pre>
+</body>
+</html>

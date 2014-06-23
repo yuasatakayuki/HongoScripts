@@ -1,0 +1,31 @@
+<html>
+<body>
+<pre>
+#!/bin/sh
+
+if [ $# -lt 2 ]; then
+    echo &quot;Usage : psmerge [Output file] [Input file1] [Input file2] ...&quot;
+    exit
+fi
+
+OutputFile=`echo $1`
+
+if [ -e $1 ]; then
+    echo -n &quot;$1 already exits. overwrite $1 [yes]? : &quot;
+    read answer
+    
+    case `echo $answer | tr [A-Z] [a-z]` in
+	&quot;&quot; | yes | y ) rm -r $1
+	    echo &quot;overwite $1&quot; ;;
+	* ) exit ;;
+    esac
+fi
+
+shift
+
+gs -q -dNOPAUSE -dBATCH -sDEVICE=pswrite -sPAPERSIZE=a4 -sOutputFile=${OutputFile} -c save pop -f $*
+
+exit
+</pre>
+</body>
+</html>

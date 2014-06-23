@@ -1,0 +1,28 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090306 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo &quot;<span style="text-decoration:line-through;color:blue;">fits_lightcurve_get_binsize.sh</span><span style="color:red;">hsFitsLightcurveGetBinSize</span> FILE&quot;
+exit
+fi
+
+tmp=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`
+
+nrows=`<span style="text-decoration:line-through;color:blue;">getheader.sh</span><span style="color:red;">hsFitsGetHeader</span> $1 1 NAXIS2`
+<span style="text-decoration:line-through;color:blue;">fits_get_cell_value.sh</span><span style="color:red;">hsFitsGetTableCellValue</span> $1 1 TIME `calc $nrows-1`-$nrows &gt; $tmp
+
+perl &lt;&lt; EOF
+open(FILE,&quot;$tmp&quot;);
+@file=&lt;FILE&gt;;close FILE;
+print \$file[1]-\$file[0];
+EOF
+
+rm $tmp
+</pre>
+</body>
+</html>

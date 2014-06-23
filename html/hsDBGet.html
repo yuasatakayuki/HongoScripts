@@ -1,0 +1,41 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#20091002 Takayuki Yuasa
+#20091021 Takayuki Yuasa added to HongoScripts
+#20100222 Takayuki Yuasa file existency check
+
+#retrive an entry from space-delimitted database file
+
+if(ARGV.length!=3)then
+ print &quot;give db file path, key and column index to be retrieved...\n&quot;
+ print &quot;e.g.\n&quot;
+ print &quot;<span style="text-decoration:line-through;color:blue;">db_get.rb</span><span style="color:red;">hsDBGet</span> (db file) (key) (column index)\n&quot;
+ exit
+end
+
+db_file=ARGV[0]
+name=ARGV[1]
+column=ARGV[2].to_i()
+
+#check
+if(!File.exist?(db_file))then
+ print &quot;db file not found...exit\n&quot;
+ exit
+end
+
+open(db_file).each { |line|
+ if(line.include?(name+&quot; &quot;))then
+  if(line.include?(&#39;&quot;&#39;))then
+   print line.split(&#39;&quot;&#39;)[column]
+  else
+   print line.split(&quot; &quot;)[column]
+   exit
+  end
+ end
+}
+</pre>
+</body>
+</html>

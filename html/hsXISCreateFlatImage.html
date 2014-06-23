@@ -1,0 +1,515 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+binning=8
+
+if [ _$2 = _ -o `<span style="text-decoration:line-through;color:blue;">get_folder_path.sh</span><span style="color:red;">hsFolderGetPath</span> 2` != &quot;xis/image_analysis&quot; ]; then
+cat &lt;&lt; EOF 1&gt;&amp;2
+`basename $0` (event file) (tag name) (energy lower in keV;optional) (energy upper in keV;optional)
+
+Please run this script in xis/image_analysis/ folder.
+
+This script creates an exposure-, vignetting-, and NXB-corrected
+image from an XIS event file. The output is stored as
+flattended_images/(tagname)/xisN_vig_exp_corrected.img
+in units of count/s/pixel. The NXB is estimated using
+xisnxbgen.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+This script takes several hours to complete due to
+a large Monte Carlo simulation performed in xissim.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+Please set XIS_CREATE_FLATIMAGE_SH_REUSE_FILES
+environmental variable to &quot;yes&quot; to speed up calculation
+using existing files. For example,
+
+export XIS_CREATE_FLATIMAGE_SH_REUSE_FILES=yes
+export XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES=yes
+export XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES_FROM=(path to flatimages/)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+EOF
+exit -1
+fi
+
+#function
+function remove_temporary_files() {
+for file in $tmp_flat_eventlist $workdir/$nxbimagedir/$nxblogfile $workdir/$nxbimagedir/$tmp_spec $workdir/$nxbimagedir/$regionfile $workdir/$nxbimagedir/$tmp_nxb_binned $workdir/$sourceimagedir/$tmp_source_in_rate $workdir/$tmp_subtracted $workdir/$tmp_trimmed $workdir/$tmp_vig_corrected; do
+if [ _$file != _ -a -f $file ]; then
+rm -f $file 2&gt; /dev/null
+fi
+done
+
+}
+
+
+#set parameters
+eventfile=$1
+tagname=$2
+
+if [ _$4 = _ ]; then
+elow=0.5
+ehigh=10
+else
+elow=$3
+ehigh=$4
+fi
+
+if [ _$5 = _ ]; then
+extraconditionextracondition=$3
+else
+extracondition=&quot;&quot;
+fi
+
+workdir=flattened_images/$tagname/
+
+#convert energy to PI
+pilow=`<span style="text-decoration:line-through;color:blue;">xis_energy_to_pi.sh</span><span style="color:red;">hsXISEnergyToPI</span> $elow`
+pihigh=`<span style="text-decoration:line-through;color:blue;">xis_energy_to_pi.sh</span><span style="color:red;">hsXISEnergyToPI</span> $ehigh`
+
+#check files
+echo &quot;Checking input event file...&quot; 1&gt;&amp;2
+if [ ! -f $eventfile ]; then
+echo &quot;input event file is not found...&quot; 1&gt;&amp;2
+remove_temporary_files
+exit -1
+else
+eventfile=`fullpath $1`
+fi
+n=`<span style="text-decoration:line-through;color:blue;">xis_get_xis_number.sh</span><span style="color:red;">hsXISGetXISNumber</span> $eventfile`
+
+echo &quot;Checking input event file...done&quot; 1&gt;&amp;2
+if [ ! -f $extracondition ]; then
+echo &quot;extra condition file is not found...&quot; 1&gt;&amp;2
+remove_temporary_files
+exit -1
+fi
+
+
+#create log file
+logfile=logs/$tagname/`basename $0 &quot;.*&quot;`.log
+if [ ! -d logs/$tagname ]; then
+mkdir logs/$tagname
+fi
+if [ ! -f $logfile ]; then
+echo &quot;Log file &#39;$logfile&#39; is newly created...&quot; 1&gt;&amp;2
+touch $logfile
+else
+echo &quot;Existing log file &#39;$logile&#39; is used...&quot;
+fi
+
+cat &lt;&lt; EOF 1&gt;&amp;2
+
+To check the execution status of this script,
+please see the log file using &quot;tail -f&quot; command.
+Example:
+tail -f $logfile
+
+EOF
+
+
+#create folders
+flatimagedir=flatimages
+nxbimagedir=nxbimages
+exposuremapdir=exposuremaps
+sourceimagedir=sourceimages
+if [ ! -d $workdir ]; then
+mkdir -p $workdir
+fi
+
+pushd $workdir &amp;&gt; /dev/null
+if [ ! -d $flatimagedir ]; then
+mkdir $flatimagedir
+fi
+if [ ! -d $nxbimagedir ]; then
+mkdir $nxbimagedir
+fi
+if [ ! -d $sourceimagedir ]; then
+mkdir $sourceimagedir
+fi
+if [ ! -d $exposuremapdir ]; then
+mkdir $exposuremapdir
+fi
+popd &amp;&gt; /dev/null
+
+
+
+########################################
+# Flat image
+########################################
+flatimage=xis${n}_flat.img
+flatnormalized=xis${n}_flat_smoothed_normalized.img
+
+function create_flat_image(){
+
+#create flat image
+echo &quot;Creating flat image... (this will take time; several hours!)&quot; 1&gt;&amp;2
+tmp_flat_eventlist=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.evt
+<span style="text-decoration:line-through;color:blue;">xis_create_flatimage_eventlist.sh</span><span style="color:red;">hsXISCreateFlatImageEventList</span> $eventfile $tmp_flat_eventlist
+mv $tmp_flat_eventlist $workdir/$flatimagedir/
+echo &quot;Creating flat image... done&quot; 1&gt;&amp;2
+
+pushd $workdir/$flatimagedir &amp;&gt; /dev/null
+
+if [ ! -f $tmp_flat_eventlist ]; then
+echo &quot;Flat image event file &#39;$tmp_flat_eventlist&#39; is not found...&quot; 1&gt;&amp;2
+echo &quot;Flat image creation failed...&quot; 1&gt;&amp;2
+remove_temporary_files
+exit -1
+fi
+
+rm -f $flatimage
+xselect &lt;&lt; EOF
+
+no
+read event $tmp_flat_eventlist ./
+set XYBINSIZE $binning
+extract image
+save image $flatimage
+quit
+no
+EOF
+
+#smooth then normalize the flat image
+flatsmoothed=xis${n}_flat_smoothed.img
+sigma=`perl -e &quot;print (16/$binning)&quot;`
+rm -f $flatsmoothed
+ximage &lt;&lt; EOF
+read/fits $flatimage
+smooth/sigma=$sigma
+write_image/fits $flatsmoothed
+exit
+EOF
+
+max=`<span style="text-decoration:line-through;color:blue;">fits_get_maximum_pixel_value.sh</span><span style="color:red;">hsFitsImageGetMaximumPixelValue</span> $flatsmoothed`
+max=`perl -e &quot;print int($max)&quot;`
+if [ _$max = _0 ]; then
+echo &quot;Flat image is zero...exit&quot; 1&gt;&amp;2
+remove_temporary_files
+exit -1
+fi
+#exposure=`<span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $eventfile`
+#scaling=`ruby -e &quot;print $exposure/$max&quot;`
+rm -f $flatnormalized
+ximage &lt;&lt; EOF
+read/fits $flatsmoothed
+rescale/divide
+$max
+write_image/fits $flatnormalized
+quit
+EOF
+popd &amp;&gt; /dev/null
+
+}
+########################################
+
+
+########################################
+# Exposure map and trim mask
+########################################
+exposuremap=xis${n}_expmap.img
+binnedexposuremap=xis${n}_expmap_binned.img
+trimmask=xis${n}_trim.img
+
+function create_exposuremap_and_trimmap() {
+echo &quot;Creating exposure map...&quot;
+pushd $workdir/$exposuremapdir &amp;&gt; /dev/null
+
+rm -f $exposuremap
+attfile=`ls ../../../../auxil/*att | tail -1`
+xisexpmapgen $exposuremap $eventfile $attfile  &amp;&gt; /dev/null
+
+rm -f $binnedexposuremap
+fimgbin &quot;$exposuremap[1]&quot; $binnedexposuremap $binning
+if [ ! -f $binnedexposuremap ]; then
+ echo &quot;Error while creating &#39;binned exposure map&#39;...&quot;
+ exit -1
+fi
+
+rm -f $trimmask
+exposure=`<span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $eventfile`
+thresholdlo=`perl -e &quot;print int(0.8*$exposure*$binning*$binning)&quot;`
+thresholdup=`perl -e &quot;print int(0.8*$exposure*$binning*$binning+1)&quot;`
+echo &quot;thresholdlo=$thresholdlo&quot;
+echo &quot;thresholdup=$thresholdup&quot;
+cat &lt;&lt; EOF
+fimgtrim infile=&quot;${binnedexposuremap}[1]&quot; threshlo=$thresholdlo threshup=$thresholdup const_lo=0 const_up=1 outfile=$trimmask
+EOF
+fimgtrim infile=&quot;${binnedexposuremap}[1]&quot; threshlo=$thresholdlo threshup=$thresholdup const_lo=0 const_up=1 outfile=$trimmask
+if [ ! -f $trimmask ]; then
+echo &quot;Error while creating a trim mask...&quot;
+exit
+fi
+
+#trim exposure map with trim mask
+tmp=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`
+farith &quot;${binnedexposuremap}[1]&quot; $trimmask $tmp mul
+mv $tmp ${binnedexposuremap}
+
+rm -f $tmp
+popd &amp;&gt; /dev/null
+}
+########################################
+
+
+########################################
+# NXB image
+########################################
+nxbfile=xis${n}_nxb.pi
+nxbimagefile=xis${n}_nxb.img
+nxbbinnedimagefile=xis${n}_nxb_binned.img
+nxblogfile=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`_nxbgen_log
+function create_nxb_image() {
+echo &quot;Creating NXB image...&quot;
+pushd $workdir/$nxbimagedir &amp;&gt; /dev/null
+
+#create temporary image
+tmp_spec=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.pi
+nxb_tmp_speclog=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`_tmp_nxbspec.log
+calmask=`<span style="text-decoration:line-through;color:blue;">xis_find_calmask.sh</span><span style="color:red;">hsXISFindCalMask</span> $eventfile`
+xselect &lt;&lt; EOF &amp;&gt; $nxb_tmp_speclog
+
+no
+read event $eventfile /
+filter column &quot;status=0:65535 131072:196607 262144:327679 393216:458751&quot;
+extract spec
+save spec $tmp_spec
+no
+exit
+no
+EOF
+
+if [ ! -f $tmp_spec ]; then
+echo &quot;Spectrum file which is need for NXB creation cannot be created...&quot; 1&gt;&amp;2
+echo &quot;See log `fullpath $nxb_tmp_speclog`&quot; 1&gt;&amp;2
+remove_temporary_files
+exit -1
+else
+rm -f $nxb_tmp_speclog
+fi
+
+#xisnxbgen
+regionfile=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.reg
+cat &lt;&lt; EOF &gt; $regionfile
+global color=green width=1 font=&quot;helvetica 10 normal&quot; select=1 highlite=1 dash=0 fixed=0 edit=1 move=1 delete=1 include=1 source=1
+image
+circle(512,512,2000)
+EOF
+
+if [ ! -f $regionfile ]; then
+echo &quot;Region file which is need for NXB creation cannot be created...&quot; 1&gt;&amp;2
+echo &quot;(filename= `fullpath $regionfile`)&quot; 1&gt;&amp;2
+remove_temporary_files
+exit -1
+fi
+
+orbfile=`ls ../../../../auxil/*orb | tail -1`
+attfile=`ls ../../../../auxil/*att | tail -1`
+touch $nxblogfile
+if [ -f $orbfile -a -f $attfile ]; then
+xisnxbgen outfile=$nxbfile phafile=$tmp_spec region_mode=SKYREG regfile=$regionfile orbit=$orbfile attitude=$attfile pi_min=$pilow pi_max=$pihigh &amp;&gt; $nxblogfile
+else
+echo &quot;orb file or att file not found...&quot; 1&gt;&amp;2
+remove_temporary_files
+exit -1
+fi
+
+if [ ! -f $nxbfile ]; then
+echo &quot;NXB creation failed...&quot; 1&gt;&amp;2
+echo &quot;See log `fullpath $nxblogfile`...&quot; 1&gt;&amp;2
+remove_temporary_files
+exit -1
+else
+echo &quot;NXB creation done&quot;
+rm -f $nxblogfile
+fi
+
+rm -f $nxbimagefile
+fextract ${nxbfile}[3] $nxbimagefile
+
+#rebin the nxb image
+tmp_nxb_binned=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.img
+fimgbin &quot;${nxbimagefile}[1]&quot; $tmp_nxb_binned $binning
+
+#rescale (to count rate)
+exposure=`<span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $nxbfile`
+scale=`perl -e &quot;print $exposure*$binning*$binning&quot;`
+rm -f $nxbbinnedimagefile
+ximage &lt;&lt; EOF &amp;&gt; /dev/null
+read/fits $tmp_nxb_binned
+rescale/divide
+$scale
+write_image $nxbbinnedimagefile
+exit
+EOF
+
+popd &amp;&gt; /dev/null
+}
+########################################
+
+
+########################################
+# Source image
+########################################
+sourcecountimagefile=xis${n}_source.img
+sourceimagefile=xis${n}_source_in_rate.img
+
+function extract_source_image(){
+pushd $workdir/$sourceimagedir &amp;&gt; /dev/null
+#extract source image
+rm -f $sourcecountimagefile
+xselect &lt;&lt; EOF &amp;&gt; /dev/null
+
+no
+read event $eventfile /
+filter column &quot;status=0:65535 131072:196607 262144:327679 393216:458751&quot;
+filter pha_cut $pilow $pihigh
+set xybinsize $binning
+extract image
+save image $sourcecountimagefile
+exit
+no
+EOF
+
+#to count rate
+rm -f $sourceimagefile
+tmp_source_in_rate=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`_source_in_rate.img
+farith $sourcecountimagefile[0] ../$exposuremapdir/$binnedexposuremap[0] $tmp_source_in_rate DIV
+fimgtrim &quot;$tmp_source_in_rate[0]&quot; threshlo=-100 const_lo=0 threshup=100 const_up=0 outfile=$sourceimagefile
+popd &amp;&gt; /dev/null
+}
+########################################
+
+
+#files
+#source   : $sourceimagedir/$sourceimagefile
+#nxb      : $nxbimagedir/$nxbbinnedimagefile
+#flat     : $flatimagedir/$flatnormalized
+#trimmask : $exposuremapdir/$trimmask
+
+
+########################################
+# Subtract NXB then divide with flat
+########################################
+
+function flatten_image() {
+pushd $workdir &amp;&gt; /dev/null
+cat &lt;&lt; EOF 1&gt;&amp;2
+Flattening the image...
+EOF
+
+#check files
+cat &lt;&lt; EOF 1&gt;&amp;2
+Checking needed files...
+Source              : $sourceimagedir/$sourceimagefile (in counts/s/binned pixel)
+NXB                 : $nxbimagedir/$nxbbinnedimagefile (in counts/s/binned pixel)
+Flat and Exposure   : $flatimagedir/$flatnormalized (flat image normalized at the maximum=1)
+TrimMask            : $exposuremapdir/$trimmask (contains 0 or 1 for masking) 
+
+EOF
+
+if [ -f $sourceimagedir/$sourceimagefile -a -f $nxbimagedir/$nxbbinnedimagefile -a -f $flatimagedir/$flatnormalized -a -f $exposuremapdir/$trimmask ]; then
+echo &quot;All needed files exist...&quot;
+else
+echo &quot;Needed file is missing...&quot; 1&gt;&amp;2
+remove_temporary_files
+exit -1
+fi
+
+#subtract
+tmp_subtracted=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`_sub.img
+tmp_vig_corrected=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`_vig_corrected.img
+output=xis${n}_flattened.img
+rm -f $output
+echo &quot;Subtracting NXB...&quot; 1&gt;&amp;2
+farith $sourceimagedir/$sourceimagefile[0] $nxbimagedir/$nxbbinnedimagefile[0] $tmp_subtracted SUB
+echo &quot;Correcting vignetting...&quot; 1&gt;&amp;2
+farith $tmp_subtracted[0] $flatimagedir/$flatnormalized[0] $tmp_vig_corrected DIV
+echo &quot;Applying trim mask...&quot; 1&gt;&amp;2
+tmp_trimmed=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`_trimmed.img
+farith $exposuremapdir/$trimmask[0] $tmp_vig_corrected[0] $tmp_trimmed MUL
+fimgtrim &quot;$tmp_trimmed[0]&quot; threshlo=-100 const_lo=0 threshup=100 const_up=0 outfile=$output
+output_fullpath=`fullpath $output`
+echo &quot;Flattened image was saved as $output_fullpath ...&quot; 1&gt;&amp;2
+popd &amp;&gt; /dev/null
+}
+########################################
+
+
+########################################
+# Main part
+########################################
+
+cat &lt;&lt; EOF
+======================================================
+`basename $0` : creates flattened XIS image
+======================================================
+EOF
+
+#check reuse flag
+if [ _$XIS_CREATE_FLATIMAGE_SH_REUSE_FILES != _ ]; then
+echo &quot;XIS_CREATE_FLATIMAGE_SH_REUSE_FILES is set.&quot;
+echo &quot;Existing files are reused...&quot;
+fi
+
+if [ _$XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES_FROM != _ ]; then
+ echo &quot;XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES_FROM is set...&quot;
+ echo &quot;Checking if flat image is available...&quot;
+ if [ -f $XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES_FROM/$flatnormalized ]; then
+ echo &quot;Checking if flat image is available...found&quot;
+  echo &quot;Skipping to create flat image...&quot;
+  fullpath=`fullpath $XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES_FROM/$flatnormalized`
+  flatimagedir=`dirname $fullpath`
+ else
+  echo &quot;Error flat image is not found in $XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES_FROM/ although XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES_FROM is set...exit&quot;
+  exit -1
+ fi
+else
+ if [ ! -f $workdir/$flatimagedir/$flatnormalized ]; then
+  create_flat_image
+ else
+  if [ _$XIS_CREATE_FLATIMAGE_SH_REUSE_FLAT_FILES != _ -o _$XIS_CREATE_FLATIMAGE_SH_REUSE_FILES != _ ]; then
+   echo &quot;Skipping to create flat image...&quot;
+  else
+   create_flat_image
+  fi
+ fi
+fi
+
+
+if [ -f $workdir/$exposuremapdir/$trimmask -a _$XIS_CREATE_FLATIMAGE_SH_REUSE_FILES != _ ]; then
+echo &quot;Skipping to create exposure map and trim map...&quot;
+else
+create_exposuremap_and_trimmap
+fi
+
+if [ -f $workdir/$nxbimagedir/$nxbbinnedimagefile -a _$XIS_CREATE_FLATIMAGE_SH_REUSE_FILES != _ ]; then
+echo &quot;Skipping to create NXB image...&quot;
+else
+create_nxb_image
+fi
+
+
+if [ -f $workdir/$sourceimagedir/$sourceimagefile -a _$XIS_CREATE_FLATIMAGE_SH_REUSE_FILES != _ ]; then
+echo &quot;Skipping to create source image...&quot;
+else
+extract_source_image
+fi
+
+#final process
+flatten_image
+
+#delete temporary files
+remove_temporary_files
+
+#message
+echo &quot;`basename $0` completed.&quot; 1&gt;&amp;2
+echo &quot;&quot; 1&gt;&amp;2
+</pre>
+</body>
+</html>

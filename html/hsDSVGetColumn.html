@@ -1,0 +1,39 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env perl
+
+#20081123 Takayuki Yuasa
+#20090512 Takayuki Yuasa script name changed
+#20100124 perl path fixed
+
+if(@ARGV!=2 and @ARGV!=3){
+ print &quot;usage : <span style="text-decoration:line-through;color:blue;">matrix_get_column</span><span style="color:red;">hsDSVGetColumn</span> FILE COLUMN (deimiter)&quot;;
+ exit;
+}
+  
+$tmp=&quot;.matrix_column.pl.tmp&quot;;
+system(&quot;<span style="text-decoration:line-through;color:blue;">delete_multiple_space</span><span style="color:red;">hsStringDeleteMultipleSpaces</span> $ARGV[0] &gt; $tmp&quot;);
+
+open(FILE,&quot;$tmp&quot;);
+@file=&lt;FILE&gt;;close FILE;
+
+$column=$ARGV[1];
+
+if($ARGV[2] eq &quot;&quot;){
+ $delimiter=&quot; &quot;;
+}else{
+ $delimiter=$ARGV[2];
+}
+
+foreach $line (@file){
+ chomp($line);
+ @a=split($delimiter,$line);
+ print $a[$column].&quot;\n&quot;;
+}
+
+system(&quot;rm $tmp&quot;);
+
+</pre>
+</body>
+</html>

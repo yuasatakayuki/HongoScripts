@@ -1,0 +1,26 @@
+<html>
+<body>
+<pre>
+#!/bin/sh
+
+if [ _$3 = _ ]; then
+echo &quot;give prefix, suffix, and files to be renamed...&quot;
+exit
+fi
+
+prefix=$1
+suffix=$2
+
+#counter
+i=0
+
+#loop for given files
+for file in $@; do
+	if [ $file != $1 -a $file != $2 ]; then
+		echo &quot;mv ${file} ${prefix}_${i}.${suffix}&quot;
+		i=`calc $i+1`
+	fi
+done
+</pre>
+</body>
+</html>

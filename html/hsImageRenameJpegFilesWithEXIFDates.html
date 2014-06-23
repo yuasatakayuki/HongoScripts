@@ -1,0 +1,18 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20140208 Takayuki Yuasa
+
+for file in $*; do
+yyyymmdd=`jhead ${file}  | grep Date | awk &#39;{print $3}&#39; | sed -e &quot;s/://g&quot;`
+hhmm=`jhead ${file}  | grep Date | awk &#39;{print $4}&#39; | sed -e &quot;s/://g&quot;`
+cat &lt;&lt; EOF
+mv $file ${yyyymmdd}_${hhmm}.jpg
+EOF
+
+done
+</pre>
+</body>
+</html>

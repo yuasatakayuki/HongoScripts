@@ -1,0 +1,42 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090511 S. Yamada
+
+#This script finds appropriate response
+#file for a PIN spectrum from CALDB automatically.
+
+if [ _$1 = _ ];
+then
+echo &quot;usage : <span style="text-decoration:line-through;color:blue;">gso_find_arffile_auto.sh</span><span style="color:red;">hsGSOFindARF</span> (target file; e.g. GSO spectrum file)&quot;
+exit
+fi
+
+infile=$1
+
+nominal=`<span style="text-decoration:line-through;color:blue;">getheader.sh</span><span style="color:red;">hsFitsGetHeader</span> $1 0 NOM_PNT`
+
+if [ _$nominal = _&#39;HXD&#39; ];
+then
+nom=hxnom
+else
+nom=xinom
+fi
+
+
+response=./arfs/ae_hxd_gso${nom}_crab_20070502.arf
+
+if [ ! -f $response ];
+then
+echo &quot;No response file was found, start download...&quot;
+url=http://www.astro.isas.jaxa.jp/suzaku/analysis/hxd/gsoarf/arf/ae_hxd_gso${nom}_crab_20070502.arf
+wget $url
+mv ae_hxd_gso${nom}_crab_20070502.arf arfs/
+fi
+
+echo $response
+</pre>
+</body>
+</html>

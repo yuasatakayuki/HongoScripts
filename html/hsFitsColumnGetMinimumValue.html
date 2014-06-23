@@ -1,0 +1,36 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090306 Takayuki Yuasa
+
+if [ _$3 = _ ];
+then
+echo &quot;fits_get_minimum_column_value.sh FILE EXTENSION COLUMN&quot;
+exit
+fi
+
+tmp=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`
+
+<span style="text-decoration:line-through;color:blue;">fits_dump_columns.sh</span><span style="color:red;">hsFitsDumpColumns</span> ${1} ${2} $3 &gt; $tmp
+
+perl &lt;&lt; EOF
+open(FILE,&quot;$tmp&quot;);
+@file=&lt;FILE&gt;;close FILE;
+
+\$min=\$file[0];
+
+foreach \$line (@file){
+ if(\$min&lt;\$line){
+  \$min=\$line;
+ }
+}
+
+print \$min;
+EOF
+
+rm $tmp
+</pre>
+</body>
+</html>

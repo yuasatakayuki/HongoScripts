@@ -1,0 +1,43 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20100601 Takayuki Yuasa
+
+if [ _$2 = _ ];  then
+name=`basename $0`
+cat &lt;&lt; EOF
+usage : 
+$name (file) (state variable name)
+
+example :
+$name fsm.vhdl fsm_state
+
+The input file should contain an FSM VHDL code.
+This script extract states used in the FSM, and
+then outputs type declaration for the states.
+EOF
+exit
+fi
+
+if [ ! -f $1 ]; then
+ echo &quot;file not found...exit&quot;
+ exit
+fi
+
+file=$1
+variable=$2
+
+cat &lt;&lt; EOF
+type ${variable}s is (
+EOF
+
+grep when $file | grep &quot;=&gt;&quot; | awk &#39;{print &quot; &quot;$2&quot;,&quot;}&#39;
+
+cat &lt;&lt; EOF
+);
+EOF
+</pre>
+</body>
+</html>

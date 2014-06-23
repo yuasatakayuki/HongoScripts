@@ -1,0 +1,39 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20100701 Takayuki Yuasa
+
+if [ _$1 = _ ]; then
+name=`basename $0`
+cat &lt;&lt; EOF
+usage:
+$name (file1) (file2) ... (fileN)
+
+This script creates an HTML code which lists hyper links
+for downloading files specified as arguments. Save the
+output as &quot;index.html&quot; for example.
+EOF
+exit
+fi
+
+cat &lt;&lt; EOF
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;files&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+EOF
+
+for file in $@; do
+cat &lt;&lt; EOF
+&lt;a href=&quot;$file&quot;&gt;$file&lt;/a&gt;&lt;br/&gt;
+EOF
+done
+
+cat &lt;&lt; EOF
+&lt;/body&gt;
+&lt;/html&gt;
+EOF
+</pre>
+</body>
+</html>

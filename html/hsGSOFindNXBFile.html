@@ -1,0 +1,50 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090507 S. Yamada
+#20121001 S. Sakurai
+
+if [ _$1 = _ ];
+then
+echo &quot;usage : <span style="text-decoration:line-through;color:blue;">gso_find_nxbfile.sh</span><span style="color:red;">hsGSOFindNXBFile</span> (GSO fits file;evt or pi) (quick or tuned)&quot;
+echo &quot;if there is no nxb file yet, a string &#39;none&#39; will be returned.&quot;
+exit
+fi
+
+file=$1
+
+
+#tunedurl=http://www.astro.isas.jaxa.jp/suzaku/analysis/hxd/gsonxb/gsonxb_ver2.4/
+
+#echo &quot;--------------------&quot;
+#echo $file 
+#ls $file 
+#echo &quot;--------------------&quot;
+obsid=`<span style="text-decoration:line-through;color:blue;">getheader.sh</span><span style="color:red;">hsFitsGetHeader</span> $file 0 obs_id`
+dateobs=`<span style="text-decoration:line-through;color:blue;">date_obs.sh</span><span style="color:red;">hsFitsGetDateObs</span> $file`
+
+year=`ruby -e &quot;print ARGV[0].split(&#39;-&#39;)[0]&quot; $dateobs`
+month=`ruby -e &quot;print ARGV[0].split(&#39;-&#39;)[1]&quot; $dateobs`
+day=`ruby -e &quot;print ARGV[0].split(&#39;-&#39;)[2]&quot; $dateobs`
+
+if [ ${year} -lt 2011 ]; then
+tunedurl=http://www.astro.isas.jaxa.jp/suzaku/analysis/hxd/gsonxb/gsonxb_ver2.5/
+elif [ ${year} -gt 2011 ]; then
+tunedurl=http://www.astro.isas.jaxa.jp/suzaku/analysis/hxd/gsonxb/gsonxb_ver2.6/
+elif [ ${month} -lt 11 ]; then
+#hereafter year==2011
+tunedurl=http://www.astro.isas.jaxa.jp/suzaku/analysis/hxd/gsonxb/gsonxb_ver2.5/
+elif [ ${month} = 11 &amp;&amp; ${day} -lt 4 ]; then
+tunedurl=http://www.astro.isas.jaxa.jp/suzaku/analysis/hxd/gsonxb/gsonxb_ver2.5/
+else
+tunedurl=http://www.astro.isas.jaxa.jp/suzaku/analysis/hxd/gsonxb/gsonxb_ver2.6/
+fi
+
+#echo &quot;searching GSO $type NXB for OBSID:$obsid (${year}-${month})&quot;
+
+echo &quot;$tunedurl/${year}_${month}/ae${obsid}_hxd_gsobgd.evt.gz&quot;
+</pre>
+</body>
+</html>

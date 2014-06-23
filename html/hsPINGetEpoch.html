@@ -1,0 +1,111 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090305 Takayuki Yuasa
+#20100125 Takayuki Yuasa expr substr abandoned
+#20100511 Takayuki Yuasa move to ruby
+
+#This script finds appropriate epoch number of the input PIN related file using TSTART value in the first extension header.
+
+if [ _$1 = _ ];
+then
+echo &quot;usage : <span style="text-decoration:line-through;color:blue;">pin_find_responsefile_auto.sh</span><span style="color:red;">hsPINFindResponseFileAuto</span> (target file; e.g. PIN spectrum file)&quot;
+exit
+fi
+
+infile=$1
+
+if [ _$CALDB = _ -o ! -d $CALDB ];
+then
+echo &quot;please set CALDB environmental variable&quot;
+echo &quot;also, please check if CALDB is truely located there&quot;
+echo &quot;e.g. export CALDB=/net/suzaku/process/caldb/2008-10-20&quot;
+exit
+fi
+
+
+#infile no TSTART wo get
+tstart=`<span style="text-decoration:line-through;color:blue;">getheader.sh</span><span style="color:red;">hsFitsGetHeader</span> $infile 0 TSTART`
+tstart=`calc $tstart`
+
+#response no CVSD/CVST wo get shite, list wo sakusei
+hxdcpf=${CALDB}/data/suzaku/hxd/cpf/
+tmpfile=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`
+touch $tmpfile
+
+#echo &quot;TSTART $tstart&quot;
+
+for file in `ls $hxdcpf/ae_hxd_pinhxnome*rsp`;
+do
+
+D=`<span style="text-decoration:line-through;color:blue;">getheader.sh</span><span style="color:red;">hsFitsGetHeader</span> $file 1 CVSD0001`
+T=`<span style="text-decoration:line-through;color:blue;">getheader.sh</span><span style="color:red;">hsFitsGetHeader</span> $file 1 CVST0001`
+#20100125 modified
+#UTC=&quot;`expr substr ${D} 1 10`T`expr substr ${T} 1 8`&quot;
+UTC=&quot;${D:0:10}T${T:0:8}&quot;
+
+missiontime=`<span style="text-decoration:line-through;color:blue;">suzaku_utc_to_missiontime.sh</span><span style="color:red;">hsSuzakuUTCToMissionTime</span> $UTC`
+echo &quot;$file $missiontime&quot; &gt;&gt; $tmpfile
+
+done
+
+
+#ruby &lt;&lt; EOF
+#t=0
+#finish=false
+#epoch=1
+#open(&quot;$tmpfile&quot;).each {|line|
+# a=line.split(&quot; &quot;)
+# f=a[0]
+# if(f!=nil)then
+#  e=f.split(&quot;_&quot;)[-2].split(&quot;e&quot;)[-1]
+#  t=a[1].to_f()
+#  if(t&gt;$tstart and finish==false)then
+#   epoch=e.to_i()-1
+#   finish=true
+#  end
+# end
+#  if(finish==false)then
+#   epoch=e.to_i()
+#  end
+#}
+#print epoch
+#EOF
+
+ruby &lt;&lt; EOF
+currentmaxt=-1.0
+epoch=-1
+maxepoch=-1
+open(&quot;$tmpfile&quot;).each {|line|
+ a=line.split(&quot; &quot;)
+ f=a[0]
+ if(f!=nil)then
+  e=f.split(&quot;_&quot;)[-2].split(&quot;e&quot;)[-1]
+  t=a[1].to_f()
+  if (e.to_i() &gt; maxepoch) then
+    maxepoch = e.to_i()
+  end
+  if (t&lt;$tstart and t &gt; currentmaxt) then
+    epoch=e.to_i()
+    currentmaxt=t
+  end
+ end
+}
+if (epoch &lt; 0) then
+  epoch = maxepoch
+end
+
+print epoch
+
+EOF
+
+
+
+
+rm -f $tmpfile
+rm -f $tmpfile2
+</pre>
+</body>
+</html>

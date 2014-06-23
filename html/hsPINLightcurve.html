@@ -1,0 +1,51 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090309 Takayuki Yuasa
+
+pwd=`pwd`
+if [ `basename $pwd` != lightcurve_analysis ];
+then
+echo &quot;run this script at analysis/pin/lightcurve_analysis/ folder.&quot;
+exit
+fi
+
+read -p &quot;input tag name &gt; &quot; tag
+if [ _$tag = _ ];
+then
+echo &quot;tag name empty...exit&quot;
+exit
+fi
+
+mkdir lcfiles/${tag} &amp;&gt; /dev/null
+mkdir gtis/${tag} &amp;&gt; /dev/null
+
+#merge gtis
+<span style="text-decoration:line-through;color:blue;">pin_merge_gtis.sh</span><span style="color:red;">hsPINMergeGTI</span> \
+../data/pin_evt.evt+2 \
+../data/pin_nxb.evt+2 \
+gtis/${tag}/cleaned_evt_nxb_merged.gti
+
+for binsize in 100 300 600 900;
+do
+
+<span style="text-decoration:line-through;color:blue;">pin_extract_lightcurve_with_gti.sh</span><span style="color:red;">hsPINExtractLightcurveWithGTI</span> \
+../data/pin_evt.evt \
+../data/pin_nxb.evt \
+../data/pseudo.evt \
+gtis/${tag}/cleaned_evt_nxb_merged.gti \
+lcfiles/${tag}/pin_evt ${binsize}
+
+<span style="text-decoration:line-through;color:blue;">pin_lightcurve_correct_deadtime_and_nxb.sh</span><span style="color:red;">hsPINLightcurveCorrectDeadTimeAndNXB</span> \
+lcfiles/${tag}/pin_evt_evt_bin${binsize}.lc \
+lcfiles/${tag}/pin_evt_nxb_bin${binsize}.lc \
+lcfiles/${tag}/pin_evt_pse_bin${binsize}.lc \
+lcfiles/${tag}/pin_evt_bin${binsize}_corrected_for_dt_nxb \
+../auxil/ae*.ehk
+
+done
+</pre>
+</body>
+</html>

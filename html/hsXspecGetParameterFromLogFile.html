@@ -1,0 +1,122 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#20101111 Takayuki Yuasa
+#20130429 Takayuki Yuasa added support for parallelized error estimation (e.g. error 1 2 3)
+
+if(ARGV.length&lt;3)then
+puts &lt;&lt;EOS
+<span style="text-decoration:line-through;color:blue;">xspec_get_parameter_from_a_logfile.rb</span><span style="color:red;">hsXspecGetParameterFromLogFile</span> (log file) (model component number) (parameter name) (errp/errm/value_errp_errm/value/errP/errM/value_errM_errP;optional) (ruby style format;optional)
+EOS
+exit
+end
+
+logfile=ARGV[0]
+if(!File.exist?(logfile))then
+puts &quot;File not found...&quot;
+exit
+end
+
+ncomp=ARGV[1].to_i
+pname=ARGV[2]
+err=&quot;value&quot;
+if(ARGV[3]!=nil)then
+err=ARGV[3]
+end
+
+format=&quot;%s&quot;
+format_plus=&quot;%s&quot;
+if(ARGV[4]!=nil)then
+format=ARGV[4]
+format_plus=format.gsub(&quot;%&quot;,&quot;%+&quot;)
+format_plus=format_plus.gsub(&quot;%++&quot;,&quot;%+&quot;)
+end
+
+npara=0
+paravalue=0
+
+lines=[]
+errorcommands=[]
+
+i=0
+open(logfile).each{|line|
+ line=line.gsub(&quot;#&quot;,&quot;&quot;)
+ a=line.split(&quot; &quot;)
+ if(a[1]!=nil and a[3]!=nil)then
+	 if(npara==0 and a[1].to_i==ncomp and a[3]==pname)then
+	  npara=a[0].to_i
+	  paravalue=a[-3]
+	  #puts &quot;Nparameter=#{npara}&quot;
+	 end
+ end
+ if(line.include?(&quot;XSPEC&quot;) and line.include?(&quot;&gt;&quot;) and line.include?(&quot;err&quot;) and !line.include?(&quot;eqw&quot;))then
+  errorcommands.push(i)
+ end
+ i=i+1
+ lines.push(line)
+}
+
+if(err==&quot;value&quot;)then
+puts format % paravalue
+exit
+end
+
+blocks={}
+for i in 0...errorcommands.length do
+ from=errorcommands[i]
+ to=from
+ if(errorcommands[i+1]!=nil)then
+  to=errorcommands[i+1]
+ else
+  to=lines.length-1
+ end
+ errcommand=lines[errorcommands[i]]
+ a=errcommand.split(&quot; &quot;)
+ for p in 1...a.length do
+	 nerrpara=a[p].to_i
+	 if(nerrpara!=0)then
+		 #puts nerrpara
+		 blocks[nerrpara]=lines[from..to]
+	 end
+ end
+end
+
+block=blocks[npara]
+if(block!=nil)then
+block.each{|line|
+ line=line.gsub(&quot;#&quot;,&quot; &quot;)
+ line=line.gsub(&quot;,&quot;,&quot; &quot;)
+ line=line.gsub(&quot;)&quot;,&quot; &quot;)
+ line=line.gsub(&quot;(&quot;,&quot; &quot;)
+ a=line.split(&quot; &quot;)
+ #puts line
+ if(a[0].to_i==npara)then
+  if(err==&quot;errp&quot;)then
+   puts format % a[-1]
+   exit
+  elsif(err==&quot;errm&quot;)then
+   puts format % a[-2]
+   exit
+  elsif(err==&quot;value_errp_errm&quot;)then
+   puts &quot;$#{format % paravalue}^{#{format_plus % a[-1]}}_{#{format % a[-2]}}$&quot;
+  elsif(err==&quot;errP&quot;)then
+   if(a[-3]!=nil)then
+    puts format % a[-3]
+   end
+  elsif(err==&quot;errM&quot;)then
+   if(a[-4]!=nil)then
+    puts format % a[-4]
+   end
+  elsif(err==&quot;value_errM_errP&quot;)then
+   if(a[-4]!=nil and a[-3]!=nil)then
+    puts &quot;#{format % paravalue}(#{(format_plus % a[-4]).gsub(&quot;+&quot;,&quot;&quot;)}-#{(format % a[-3]).gsub(&quot;+&quot;,&quot;&quot;)})&quot;
+   end
+  end
+ end
+}
+end
+</pre>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#<span style="text-decoration:line-through;color:blue;">xis_extract_raw_images.sh</span><span style="color:red;">hsXISExtractRawImage</span>
+#20090313 Takayuki Yuasa
+#20091023 Takayuki Yuasa show filter added
+#20100721 Takayuki Yuasa pixel quality selection changed (0:1023 =&gt; 0:524287)
+
+if [ _$3 = _ ];
+then
+echo &quot;<span style="text-decoration:line-through;color:blue;">xis_extract_filtered_spectrum.sh</span><span style="color:red;">hsXISExtractFilteredSpectrum</span> (input event file) (output spectrum file) (region file) (extra condition file;optional)&quot;
+exit
+fi
+
+pwd=`pwd`
+indexof=`<span style="text-decoration:line-through;color:blue;">indexof.pl</span><span style="color:red;">hsStringIndex</span> &quot;$pwd&quot; &quot;xis/spectral_analysis&quot;`
+if [ $indexof == -1 ];
+then
+echo &quot;run this script at analysis/xis/spectral_analysis/ folder.&quot;
+exit
+fi
+
+evtfile=$1
+outputdir=`dirname $2`
+outputfile=`basename $2`
+regionfile=$3
+
+mkdir -p $outputdir
+
+if [ _$4 = _ ];
+then
+extra=&quot;&quot;
+else
+extra=`cat $4`
+fi
+
+logfile=$outputdir/${outputfile}.log
+
+rm -f $outputdir/$outputfile
+
+xselect &lt;&lt; EOF 2&gt;&amp;1 | tee -a $logfile
+
+no
+read event $evtfile ./
+
+filter region $regionfile
+filter column &quot;status=0:65535 131072:196607 262144:327679 393216:458751&quot;
+$extra
+
+show filter
+
+extract spec
+save spec $outputdir/$outputfile
+no
+
+exit
+
+
+EOF
+
+#binning
+cd $outputdir
+<span style="text-decoration:line-through;color:blue;">groupmin</span><span style="color:red;">hsFitsGroupSpectrumMinimumCounts</span> &quot;$outputfile&quot; 20 | tee -a `basename $logfile`
+<span style="text-decoration:line-through;color:blue;">groupmin</span><span style="color:red;">hsFitsGroupSpectrumMinimumCounts</span> &quot;$outputfile&quot; 40 | tee -a `basename $logfile`
+<span style="text-decoration:line-through;color:blue;">groupmin</span><span style="color:red;">hsFitsGroupSpectrumMinimumCounts</span> &quot;$outputfile&quot; 60 | tee -a `basename $logfile`
+<span style="text-decoration:line-through;color:blue;">groupmin</span><span style="color:red;">hsFitsGroupSpectrumMinimumCounts</span> &quot;$outputfile&quot; 80 | tee -a `basename $logfile`
+cd - &amp;&gt; /dev/null
+
+</pre>
+</body>
+</html>

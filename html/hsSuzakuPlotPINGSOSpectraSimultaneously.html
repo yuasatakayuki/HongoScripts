@@ -1,0 +1,181 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090526 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo &quot;usage : <span style="text-decoration:line-through;color:blue;">go_suzaku_simultaneous_pin_gso_checkplot.sh</span><span style="color:red;">hsSuzakuPlotPINGSOSpectraSimultaneously</span> (obsid) (folder name;optional, default=OBSID) (tag name;optional, default=cleanedevent)&quot;
+exit
+fi
+
+
+########################################
+#parameter set
+########################################
+obsid=$1
+
+if [ _$2 = _ ];
+then
+foldername=$obsid
+else
+foldername=$2
+fi
+
+if [ _$3 = _ ];
+then
+tagname=cleanedevent
+else
+tagname=$2
+fi
+
+topdir=`pwd`
+
+logfile=&quot;$topdir/$foldername/pin_gso_checkplot.log&quot;
+mkdir -p `dirname $logfile`
+touch $logfile
+
+<span style="text-decoration:line-through;color:blue;">suzaku_create_analysis_folder.sh</span><span style="color:red;">hsSuzakuCreateAnalysisFolder</span> $foldername 2&gt;/dev/null | tee -a $logfile
+
+if [ ! -d $logfile ];
+then
+touch $logfile
+fi
+
+cat &lt;&lt; EOF 2&gt;&amp;1 | tee -a $logfile
+########################################
+# <span style="text-decoration:line-through;color:blue;">go_suzaku_simultaneous_pin_gso_checkplot.sh</span><span style="color:red;">hsSuzakuPlotPINGSOSpectraSimultaneously</span>
+# `<span style="text-decoration:line-through;color:blue;"><span style="text-decoration:line-through;color:blue;">dateyymmdd</span><span style="color:red;">hsDateYYYYMMDD</span>_hhmm</span><span style="color:red;">hsDateYYYYMMDD_HHMM</span>`
+########################################
+EOF
+
+cat &lt;&lt; EOF 2&gt;&amp;1 | tee -a $logfile
+########################################
+#download data
+########################################
+EOF
+cd $topdir/$foldername/data
+pwd 2&gt;&amp;1 | tee -a $logfile
+<span style="text-decoration:line-through;color:blue;">suzaku_download_data_indicating_obsid.sh</span><span style="color:red;">hsSuzakuDownloadData</span> $obsid 2&gt;&amp;1 | tee -a $logfile
+if [ ! -d $obsid ];
+then
+echo &quot;data could not be downloaded...&quot;
+exit
+fi
+
+cd $topdir/$foldername/data/bgd
+pwd 2&gt;&amp;1 | tee -a $logfile
+<span style="text-decoration:line-through;color:blue;">pin_download_nxbs.sh</span><span style="color:red;">hsPINDownloadNXB</span> 2&gt;&amp;1 | tee -a $logfile
+<span style="text-decoration:line-through;color:blue;">gso_download_nxbs.sh</span><span style="color:red;">hsGSODownloadNXB</span> 2&gt;&amp;1 | tee -a $logfile
+
+pinnxb=`ls ae*pin* 2&gt; /dev/null`
+gsonxb=`ls ae*gso* 2&gt; /dev/null`
+
+cat &lt;&lt; EOF 2&gt;&amp;1 | tee -a $logfile
+########################################
+#unzip large files
+########################################
+EOF
+cd $topdir/$foldername/data/$obsid/hxd/event_uf
+pwd 2&gt;&amp;1 | tee -a $logfile
+gzip -d *gz 2&gt;&amp;1 | tee -a $logfile
+
+
+cat &lt;&lt; EOF 2&gt;&amp;1 | tee -a $logfile
+########################################
+#pin
+########################################
+EOF
+if [ _$pinnxb != _ ];
+then
+
+cd $topdir/$foldername/analysis/pin
+pwd 2&gt;&amp;1 | tee -a $logfile
+echo &quot;Linking Event&quot; 2&gt;&amp;1 | tee -a $logfile
+<span style="text-decoration:line-through;color:blue;">pin_link_event.sh</span><span style="color:red;">hsPINLinkEventFiles</span> ../../data/$obsid 2&gt;&amp;1 | tee -a $logfile
+
+#check
+if [ ! -f data/pin_nxb.evt ];
+then
+echo &quot;nxb file not found...exit&quot; 2&gt;&amp;1 | tee -a $logfile
+exit
+fi
+
+cd $topdir/$foldername/analysis/pin/lightcurve_analysis
+pwd 2&gt;&amp;1 | tee -a $logfile
+echo &quot;<span style="text-decoration:line-through;color:blue;">go_pin_lightcurve.sh</span><span style="color:red;">hsPINLightcurve</span>&quot; 2&gt;&amp;1 | tee -a $logfile
+<span style="text-decoration:line-through;color:blue;">go_pin_lightcurve.sh</span><span style="color:red;">hsPINLightcurve</span> &lt;&lt; EOF  2&gt;&amp;1 | tee -a $logfile
+$tagname
+EOF
+
+cd $topdir/$foldername/analysis/pin/spectral_analysis
+pwd 2&gt;&amp;1 | tee -a $logfile
+echo &quot;<span style="text-decoration:line-through;color:blue;">go_pin_spec.sh</span><span style="color:red;">hsPINSpectrum</span>&quot; 2&gt;&amp;1 | tee -a $logfile
+<span style="text-decoration:line-through;color:blue;">go_pin_spec.sh</span><span style="color:red;">hsPINSpectrum</span> &lt;&lt; EOF  2&gt;&amp;1 | tee -a $logfile
+$tagname
+none
+EOF
+
+fi
+
+cat &lt;&lt; EOF 2&gt;&amp;1 | tee -a $logfile
+########################################
+#gso
+########################################
+EOF
+if [ _$gsonxb != _ ];
+then
+
+cd $topdir/$foldername/analysis/gso
+pwd 2&gt;&amp;1 | tee -a $logfile
+echo &quot;Linking Event&quot; 2&gt;&amp;1 | tee -a $logfile
+<span style="text-decoration:line-through;color:blue;">gso_link_event.sh</span><span style="color:red;">hsGSOLinkEventFiles</span> ../../data/$obsid 2&gt;&amp;1 | tee -a $logfile
+
+#check
+if [ ! -f data/gso_nxb.evt ];
+then
+echo &quot;nxb file not found...exit&quot; 2&gt;&amp;1 | tee -a $logfile
+exit
+fi
+
+cd $topdir/$foldername/analysis/gso/lightcurve_analysis
+pwd 2&gt;&amp;1 | tee -a $logfile
+echo &quot;<span style="text-decoration:line-through;color:blue;">go_gso_lightcurve.sh</span><span style="color:red;">hsGSOLightcurve</span>&quot; 2&gt;&amp;1 | tee -a $logfile
+<span style="text-decoration:line-through;color:blue;">go_gso_lightcurve.sh</span><span style="color:red;">hsGSOLightcurve</span> &lt;&lt; EOF  2&gt;&amp;1 | tee -a $logfile
+$tagname
+EOF
+
+cd $topdir/$foldername/analysis/gso/spectral_analysis
+pwd 2&gt;&amp;1 | tee -a $logfile
+echo &quot;<span style="text-decoration:line-through;color:blue;">go_gso_spec.sh</span><span style="color:red;">hsGSOSpectrum</span>&quot; 2&gt;&amp;1 | tee -a $logfile
+<span style="text-decoration:line-through;color:blue;">go_gso_spec.sh</span><span style="color:red;">hsGSOSpectrum</span> &lt;&lt; EOF  2&gt;&amp;1 | tee -a $logfile
+$tagname
+EOF
+
+fi
+
+cat &lt;&lt; EOF 2&gt;&amp;1 | tee -a $logfile
+########################################
+#summary
+########################################
+EOF
+cd $topdir/
+pwd 2&gt;&amp;1 | tee -a $logfile
+#pin/gso spec
+pinspec=`ls $foldername/analysis/pin/spec*/plots/cle*/*pdf`
+gsospec=`ls $foldername/analysis/gso/spec*/plots/cle*/*pdf`
+
+#pin/gso lc
+pinlc=`ls $foldername/analysis/pin/lig*/lc*/cle*/*bin600*saa*pdf`
+gsolc=`ls $foldername/analysis/gso/lig*/lc*/cle*/*bin1000*saa*pdf`
+
+pdftk $pinspec $gsospec $pinlc $gsolc cat output summary_pin_gso.pdf
+mkdir $foldername/analysis/simultaneous/plots/$tagname &amp;&gt; /dev/null
+mv summary_pin_gso.pdf $foldername/analysis/simultaneous/plots/$tagname
+
+echo &quot;summary plot was saved to $foldername/analysis/simultaneous/plots/$tagname/summary_pin_gso.pdf&quot;
+</pre>
+</body>
+</html>

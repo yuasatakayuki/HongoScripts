@@ -1,0 +1,139 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20090318 Takayuki Yuasa
+#20090526 Takayuki Yuasa cpd deleted (xspec no window mode)
+#20090707 Takayuki Yuasa title option, background scaling according to BACKSCAL
+#20100125 Takayuki Yuasa yes is added after exit command of XSPEC
+
+if [ _$1 = _ ];
+then
+
+cat &lt;&lt; EOF
+xis_create_check_spectra_plot.sh \\
+ (event pi file) \\
+ (nxb pi file; or none) \\
+ (cxb pi file; or none) \\
+ (bgd pi file; or none) \\
+ (response file) \\
+ (auxiliary response file; or none) \\
+ (output pdf filename) \\
+ (title;optional, default=OBJECT)
+EOF
+exit
+
+fi
+
+#parameter set
+evtfile=$1
+nxbfile=$2
+cxbfile=$3
+bgdfile=$4
+rmf=$5
+arf=$6
+outputpdf=$7
+if [ _&quot;$8&quot; = _&quot;&quot; ];
+then
+title=`<span style="text-decoration:line-through;color:blue;">targetname.sh</span><span style="color:red;">hsFitsGetTargetName</span> $evtfile`
+else
+title=$8
+fi
+
+outputps=`dirname $outputpdf`/`basename $outputpdf .pdf`.ps
+xcm=`dirname $outputpdf`/`basename $outputpdf .pdf`.xcm
+qdp=`dirname $outputpdf`/`basename $outputpdf .pdf`.qdp
+qdpbase=`dirname $outputpdf`/`basename $outputpdf .pdf`
+<span style="text-decoration:line-through;color:blue;">delete_qdp_files.sh</span><span style="color:red;">hsQDPDeleteQDPFiles</span> $qdp
+
+#get evt exposure
+if [ ! -f $evtfile ];then
+ echo &quot;evt pi file not found...exit&quot;
+ exit
+fi
+backscal_evt=`<span style="text-decoration:line-through;color:blue;">backscal.sh</span><span style="color:red;">hsFitsGetBackscal</span> $evtfile`
+
+#nxb rescaling
+if [ ! $nxbfile = none ];then
+ if [ ! -f $nxbfile ];then
+  echo &quot;nxb file not found...exit&quot;
+  exit
+ fi
+ backscal_nxb=`<span style="text-decoration:line-through;color:blue;">backscal.sh</span><span style="color:red;">hsFitsGetBackscal</span> $nxbfile`
+ exposure_nxb=`<span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $nxbfile`
+ nxbfile_scaled=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.pi
+ cp $nxbfile $nxbfile_scaled
+ <span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $nxbfile_scaled `calc &quot;$exposure_nxb*$backscal_nxb/$backscal_evt&quot;`
+ nxbfile=$nxbfile_scaled
+fi
+
+#cxb rescaling
+if [ ! $cxbfile = none ];then
+ if [ ! -f $cxbfile ];then
+  echo &quot;cxb file not found...exit&quot;
+  exit
+ fi
+ backscal_cxb=`<span style="text-decoration:line-through;color:blue;">backscal.sh</span><span style="color:red;">hsFitsGetBackscal</span> $cxbfile`
+ exposure_cxb=`<span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $cxbfile`
+ cxbfile_scaled=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.pi
+ cp $cxbfile $cxbfile_scaled
+ <span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $cxbfile_scaled `calc &quot;$exposure_cxb*$backscal_cxb/$backscal_evt&quot;`
+ cxbfile=$cxbfile_scaled
+fi
+
+#bgd rescaling
+if [ ! $bgdfile = none ];then
+ if [ ! -f $bgdfile ];then
+  echo &quot;bgd file not found...exit&quot;
+  exit
+ fi
+ backscal_bgd=`<span style="text-decoration:line-through;color:blue;">backscal.sh</span><span style="color:red;">hsFitsGetBackscal</span> $bgdfile`
+ exposure_bgd=`<span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $bgdfile`
+ bgdfile_scaled=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`.pi
+ cp $bgdfile $bgdfile_scaled
+ <span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $bgdfile_scaled `calc &quot;$exposure_bgd*$backscal_bgd/$backscal_evt&quot;`
+ bgdfile=$bgdfile_scaled
+fi
+         
+#xspec nowindow mode
+export PGPLOT_TYPE=&quot;&quot;
+
+
+<span style="text-decoration:line-through;color:blue;">xis_create_xcm_for.sh</span><span style="color:red;">hsXISCreateXCMForAnalysisTag</span> $evtfile $nxbfile $cxbfile $bgdfile $rmf $arf $xcm
+
+exposure=`<span style="text-decoration:line-through;color:blue;">exposure.sh</span><span style="color:red;">hsGetFitsExposure</span> $evtfile`
+exposure=`calc $exposure/1000`ks
+
+cat &lt;&lt; EOF &gt;&gt; $xcm
+
+iplot
+cs 1.3
+fo ro
+ti of
+la t
+la f $title / $exposure
+lwidth 3
+lwidth 3 on 1..50
+la x Energy keV
+la y Counts s\u-1\d keV\u-1
+we $qdpbase
+hard $outputps/cps
+quit
+
+exit
+yes
+
+EOF
+
+xspec &lt; $xcm
+
+rm $nxbfile_scaled $cxbfile_scaled $bgdfile_scaled
+
+cd `dirname $outputpdf`
+pwd
+ps2pdf `basename $outputps`
+cd - &amp;&gt; /dev/null
+</pre>
+</body>
+</html>

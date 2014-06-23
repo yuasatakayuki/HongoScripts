@@ -1,0 +1,27 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env perl
+
+#20070511 Takayuki Yuasa
+#20081123 Takayuki Yuasa
+#20100124 perl path fixed
+
+#delete multiple space(&quot; &quot;) and print result
+
+if(@ARGV==0){
+ print &quot;usage : <span style="text-decoration:line-through;color:blue;">delete_multiple_space</span><span style="color:red;">hsStringDeleteMultipleSpaces</span>.sh FILE\n&quot;;
+ exit;
+}
+
+open(FILE,&quot;$ARGV[0]&quot;);
+@file=&lt;FILE&gt;;close FILE;
+
+foreach $line (@file) {
+ $line=~s/ +/ /g;
+ print $line;
+}
+  
+</pre>
+</body>
+</html>

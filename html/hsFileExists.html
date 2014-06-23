@@ -1,0 +1,22 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20130723 Takayuki Yuasa
+
+if [ _$1 = _ ]; then
+ echo &quot;give files to be checked&quot;
+ exit
+fi
+
+for file in $@; do
+if [ ! -f $file ]; then
+echo &quot;no&quot;
+fi
+done
+
+echo &quot;yes&quot;
+</pre>
+</body>
+</html>

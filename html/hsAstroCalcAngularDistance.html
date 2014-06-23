@@ -1,0 +1,28 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env perl
+
+#20080828 Takayuki Yuasa
+#20100124 perl path fixed
+
+use Math::Trig;
+
+if(@ARGV!=2){
+ print &quot;usage <span style="text-decoration:line-through;color:blue;">angulardistance.pl</span><span style="color:red;">hsAstroCalcAngularDistance</span> (kpc) (arcmin)\n&quot;;
+ print &quot;return : projected distance in a unit of kpc\n&quot;;
+ exit;
+}
+
+$r=$ARGV[0];
+$arcmin=$ARGV[1];
+
+$degree=$arcmin/60;
+$radian=$degree/360*2*pi;
+
+$distance=$r*$radian;
+print $distance.&quot;\n&quot;;
+
+</pre>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+#20100604 Takayuki Yuasa
+#to convert ADVENTURE source to new C++ standard
+
+if [ _$1 = _ ]; then
+echo &quot;give cpp file to be converted...exit&quot;
+exit
+fi
+
+file=$1
+
+if [ ! -f $file ]; then
+echo &quot;file not found...exit&quot;
+exit
+fi
+
+cp $file ${file}.before_conversion
+tmp=`<span style="text-decoration:line-through;color:blue;">get_hash_random.pl</span><span style="color:red;">hsHashRandom</span>`
+
+for header in iostream iomanip fstream hash map list; do
+sed -e &quot;s/${header}.h/$header/g&quot; $file &gt; $tmp
+mv $tmp $file
+done
+
+for header in istdiostream ostdiostream stdiostream; do
+sed -e &quot;s/${header}/iostream/g&quot; $file &gt; $tmp
+mv $tmp $file
+done
+
+for header in istrstream ostrstream sstream; do
+sed -e &quot;s/$header.h/sstream/g&quot; $file &gt; $tmp
+mv $tmp $file
+done
+</pre>
+</body>
+</html>

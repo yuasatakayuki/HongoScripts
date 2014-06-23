@@ -1,0 +1,71 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#2013-08-29 Takayuki Yuasa
+
+if(ARGV.length==0)then
+	puts &lt;&lt;EOS
+give comma-separated text file.
+notes:
+- &quot;-t&quot; option could be passed to change delimitter from comma to tab.
+- &quot;\\hline&quot; could be inserted to add horizontal separator.
+EOS
+exit
+end
+
+
+delimitter=&quot;,&quot;
+if(ARGV.count(&quot;-t&quot;)!=0)then
+	delimitter=&quot;\t&quot;
+	ARGV.delete(&quot;-t&quot;)
+end
+
+puts &lt;&lt;EOS
+\\begin{table}[htb]
+\\begin{center}
+\\caption{}
+\\label{}
+EOS
+
+contents=[]
+maxNElements=0
+for file in ARGV do
+	open(file).each(){|line|
+		line.chomp!()
+		line.gsub!(&quot;&amp;&quot;,&quot;\\&amp;&quot;)
+		line.gsub!(&quot;_&quot;,&quot;\\_&quot;)
+		contents &lt;&lt; line.split(delimitter)
+	}
+	if(contents[-1].length&gt;maxNElements)then
+		maxNElements=contents[-1].length
+	end
+end
+
+puts &lt;&lt;EOS
+\\begin{tabular}{#{&quot;l&quot;*maxNElements}}
+\\hline
+EOS
+
+
+for line in contents do
+	while line.length&lt;maxNElements do
+		line &lt;&lt; &quot; &quot;
+	end
+	if(line.count(&quot;\\hline&quot;)!=0)then
+		puts &quot;\\hline&quot;
+	else
+		puts &quot;#{line.join(&quot; &amp; &quot;)} \\\\&quot;
+	end
+end
+
+puts &lt;&lt;EOS
+\\hline
+\\end{tabular}
+\\end{center}
+\\end{table}
+EOS
+</pre>
+</body>
+</html>

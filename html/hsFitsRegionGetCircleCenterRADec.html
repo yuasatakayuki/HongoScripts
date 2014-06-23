@@ -1,0 +1,53 @@
+<html>
+<body>
+<pre>
+#!/usr/bin/env ruby
+
+#20100215 Takayuki Yuasa
+
+if(ARGV.length==0)then
+print &quot;usage : <span style="text-decoration:line-through;color:blue;">regionfile_get_circle_center_ra_dec.rb</span><span style="color:red;">hsFitsRegionGetCircleCenterRADec</span> (region file name) (index of circular region;optional, default=0)\n&quot;
+print &quot;This script prints center ra and dec of a circular region which appears i-th in input file. The index i is passed as the second argument, otherwise 1st one will be used.\n&quot;
+print &quot;FK5 parameter should be included in the input region file. If not, returned ra and dec will be \&quot;0 0\&quot;.\n&quot;
+exit
+end
+
+filename=ARGV[0]
+if(ARGV.length==2)then
+ index=ARGV[1].to_i()
+else
+ index=0
+end
+
+
+if(!File.exist?(filename))then
+STDERR.print &quot;input region file &#39;#{filename}&#39; not found...exit\n&quot;
+print &quot;0 0&quot;
+exit
+end
+
+
+containsFK5=false
+array=[]
+open(filename).each {|line|
+ if(line.include?(&quot;FK5&quot;) or line.include?(&quot;fk5&quot;))then
+  containsFK5=true
+ end
+ if(line.include?(&quot;circle&quot;) or line.include?(&quot;CIRCLE&quot;))then
+  array.push(line)
+ end
+}
+
+if(containsFK5==true)then
+ line=array[index]
+ parts=line.split(&quot;(&quot;)
+ coordinates=parts[1].split(&quot;,&quot;)
+ ra=coordinates[0]
+ dec=coordinates[1]
+ print &quot;#{ra} #{dec}\n&quot;
+else
+ print &quot;0 0\n&quot;
+end
+</pre>
+</body>
+</html>

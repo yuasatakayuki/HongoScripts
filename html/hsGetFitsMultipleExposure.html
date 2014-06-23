@@ -1,0 +1,21 @@
+<html>
+<body>
+<pre>
+#!/bin/bash
+
+if [ _$1 = _ ];
+then
+echo &quot;<span style="text-decoration:line-through;color:blue;">exposures.sh</span><span style="color:red;">hsGetFitsMultipleExposure</span> FILE1 FILE2 FILE3...&quot;
+exit
+fi
+
+for file in $@;
+do
+
+<span style="text-decoration:line-through;color:blue;">getheader.sh</span><span style="color:red;">hsFitsGetHeader</span> $file 1 exposure
+
+done
+
+</pre>
+</body>
+</html>
