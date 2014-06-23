@@ -4,7 +4,7 @@
 
 if [ _$1 = _ ];
 then
-echo "give infilename, group min N, and outfilename(optional)"
+echo "Provide infilename, group min N, and outfilename(optional)"
 exit
 fi
 

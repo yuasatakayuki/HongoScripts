@@ -3,7 +3,7 @@
 #20130725 Takayuki Yuasa
 
 if(ARGV.length==0)then
-puts "give a text file"
+puts "Provide a text file"
 exit
 end
 

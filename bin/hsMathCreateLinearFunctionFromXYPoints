@@ -3,7 +3,7 @@
 #20100827 Takayuki Yuasa
 
 if(ARGV.length!=4)then
-STDERR.puts "give x1 y1 x2 y2 to calculate y=ax+b"
+STDERR.puts "Provide x1 y1 x2 y2 to calculate y=ax+b"
 exit 
 end
 

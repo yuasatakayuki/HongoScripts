@@ -4,7 +4,7 @@
 #to convert ADVENTURE source to new C++ standard
 
 if [ _$1 = _ ]; then
-echo "give cpp file to be converted...exit"
+echo "Provide cpp file to be converted...exit"
 exit
 fi
 

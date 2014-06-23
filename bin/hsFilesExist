@@ -3,7 +3,7 @@
 #20130723 Takayuki Yuasa
 
 if [ _$1 = _ ]; then
- echo "give files to be checked"
+ echo "Provide files to be checked"
  exit
 fi
 

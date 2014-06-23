@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 if (ARGV[2]==nil) then
-print "give binFrom, binTo, nStep, and (optional) separator\n"
+print "Provide binFrom, binTo, nStep, and (optional) separator\n"
 end
 
 binFrom=ARGV[0].to_f

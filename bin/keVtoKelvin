@@ -3,7 +3,7 @@
 #20100929 Takayuki Yuasa
 
 if(ARGV.length==0)then
-STDERR.puts "give a temperature in units of keV"
+STDERR.puts "Provide a temperature in units of keV"
 exit
 end 
 

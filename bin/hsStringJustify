@@ -3,7 +3,7 @@
 #20100904 Takayuki Yuasa
 
 if(ARGV.length<2)then
-STDERR.puts "give a string and a length to which the string should be adjusted"
+STDERR.puts "Provide a string and a length to which the string should be adjusted"
 STDERR.puts "optionally third argument is used as filling character instead of space."
 exit
 end

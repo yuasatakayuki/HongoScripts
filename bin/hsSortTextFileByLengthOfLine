@@ -3,7 +3,7 @@
 #2013-08-28 Takayuki Yuasa
 
 if(ARGV.length==0)then
-	puts "give file names to be sorted"
+	puts "Provide file names to be sorted"
 	puts "The '-r' option can be provided reverse sort result to descending order."
 	exit
 end

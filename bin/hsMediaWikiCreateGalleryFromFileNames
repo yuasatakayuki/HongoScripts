@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 if(ARGV.length==0)then
-print "give image file names...\n"
+print "Provide image file names...\n"
 exit
 end
 

@@ -5,7 +5,7 @@
 # wget --no-host-directories --cut-dirs=5 -A gz -r -np http://darts.isas.jaxa.jp/pub/suzaku/ver2.0/401050050/xis/event_cl/
 
 if(ARGV.length==0)then
-	puts "give a download url."
+	puts "Provide a download url."
 	exit
 end
 

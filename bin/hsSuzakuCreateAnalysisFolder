@@ -12,7 +12,7 @@ summaryfolder="summary"
 
 if [ _$1 = _ ];
 then
-echo "give folder name"
+echo "Provide folder name"
 echo "Example"
 echo " mk_suzaku_data_analysis_folder.sh yydra"
 echo " will create :"

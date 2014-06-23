@@ -3,7 +3,7 @@
 #20100826 Takayuki Yuasa
 
 if(ARGV.length==0)then
- STDERR.puts "give file to be dumped reverseley..."
+ STDERR.puts "Provide file to be dumped reverseley..."
  exit
 end
 

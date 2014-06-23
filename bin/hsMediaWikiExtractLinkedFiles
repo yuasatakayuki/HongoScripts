@@ -3,7 +3,7 @@
 #20130712 Takayuki Yuasa
 
 if(ARGV.length==0)then
- puts "give a file containing mediawiki-formatted text"
+ puts "Provide a file containing mediawiki-formatted text"
  exit
 end
 

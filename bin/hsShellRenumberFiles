@@ -1,7 +1,7 @@
 #!/bin/sh
 
 if [ _$3 = _ ]; then
-echo "give prefix, suffix, and files to be renamed..."
+echo "Provide prefix, suffix, and files to be renamed..."
 exit
 fi
 

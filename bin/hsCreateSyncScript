@@ -3,7 +3,7 @@
 #2013-11-26 Takayuki Yuasa
 
 if [ _$1 = _ ]; then
-echo "give sync destination hostname and path."
+echo "Provide sync destination hostname and path."
 echo "e.g. username@server.abcdefg.com:backup/"
 exit
 fi

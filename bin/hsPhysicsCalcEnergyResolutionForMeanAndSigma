@@ -3,7 +3,7 @@
 #20100827 Takayuki Yuasa
 
 if(ARGV.length<2)then
-STDERR.puts "give energy mean and sigma (offset is optional)"
+STDERR.puts "Provide energy mean and sigma (offset is optional)"
 exit 
 end
 

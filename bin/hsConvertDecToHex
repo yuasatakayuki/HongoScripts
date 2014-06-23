@@ -3,7 +3,7 @@
 #20130703 Takayuki Yuasa
 
 if ( ARGV.length == 0 ) then
- puts "give decimanl number or filename"
+ puts "Provide decimanl number or filename"
  exit
 end
 

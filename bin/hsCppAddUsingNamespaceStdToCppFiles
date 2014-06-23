@@ -3,7 +3,7 @@
 #20100604 Takayuki Yuasa
 
 if [ _$1 = _ ]; then
-echo "give file to be processed...exit"
+echo "Provide file to be processed...exit"
 exit
 fi
 

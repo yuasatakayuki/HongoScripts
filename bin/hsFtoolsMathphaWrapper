@@ -3,7 +3,7 @@
 if [ _$4 = _ ];
 then
 
-echo "give fileA, fileB, output filename, and an expression to be calculated (using A and B as labels for input files)"
+echo "Provide fileA, fileB, output filename, and an expression to be calculated (using A and B as labels for input files)"
 exit
 
 fi

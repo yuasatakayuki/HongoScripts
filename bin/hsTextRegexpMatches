@@ -2,7 +2,7 @@
 //20120421 Takayuki Yuasa
 
 if(args.size()<2){
-println "give filename and regex"
+println "Provide filename and regex"
 System.exit(1)
 }
 
