@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20140623
+
+if [ _$1 = _ ]; then
+	echo "Provide VHDL file to be formatted using Emacs VHDL mode"
+	exit
+fi
+
+file=$1
+
+if [ ! -f $file ]; then
+	echo "Error: file $file not found"
+	exit
+fi
+
+temporaryFile=`hsTemporaryFile`
+cat << EOF > $temporaryFile
+(setq vhdl-basic-offset 2)
+EOF
+
+temporaryVHDLFile=`hsTemporaryFile`.vhdl
+nkf --unix $file > $temporaryVHDLFile
+hsVHDLSeparateProcessAndBegin $temporaryVHDLFile > $file
+emacs -batch -l $temporaryFile $file  -f vhdl-beautify-buffer &> /dev/null
+
+echo "VHDL file $file formatted"
+
+rm -f $temporaryFile
+rm -f $temporaryVHDLFile

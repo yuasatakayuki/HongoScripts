@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20140623
+
+if(ARGV.length<1)then
+	puts "Provide VHDL file to be processed"
+	exit
+end
+
+file=ARGV[0]
+
+if(!File.exist?(file))then
+	STDERR.puts "Error: file #{file} not found"
+	exit
+end
+
+open(file).each(){|line|
+	lineLower=line.downcase
+	if(lineLower.include?("process") and lineLower.include?("(") and lineLower.include?("begin"))then
+		puts line.gsub("begin","").gsub("BEGIN","").gsub("Begin","")
+		lineLower.match(/^\s+/)
+		if(Regexp.last_match!=nil and Regexp.last_match[0]!=nil)then
+			print Regexp.last_match[0].to_s
+		end
+		puts "begin"
+	else
+		puts line
+	end
+}
