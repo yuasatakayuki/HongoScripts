@@ -32,9 +32,9 @@ brew install hongoscripts
 
 3. Test if successfully installed.
 <pre>
-hsFullpath .
-(this will show the full path of your current directory)
-(if it does not work, installation seems failed. check the output of the brew command)
+hsHello
+   [this will show a message from HongoScripts]
+   [if it does not work, installation seems failed. check the output of the brew command]
 </pre>
 
 
