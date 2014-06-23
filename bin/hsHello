@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20140623
+
+puts "Hello from HongoScripts version 2!"
