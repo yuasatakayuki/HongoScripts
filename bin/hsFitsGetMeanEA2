@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if [ _$1 = _ ];
+then
+echo "hsFitsGetMeanEA2 FILE"
+exit
+fi
+
+hsFitsGetHeader $1 0 mean_ea2
+
+

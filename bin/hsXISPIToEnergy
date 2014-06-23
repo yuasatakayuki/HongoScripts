@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#20090312 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo "hsXISPIToEnergy (PI)"
+echo "e.g. hsXISPIToEnergy 1300"
+exit
+fi
+
+calc "($1-1)*3.65/1000"

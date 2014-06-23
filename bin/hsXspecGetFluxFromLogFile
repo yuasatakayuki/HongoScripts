@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+
+#20090928 Takayuki Yuasa
+#20090929 Takayuki Yuasa bug fix
+#20100222 Takayuki Yuasa for xspec12 log
+
+#Usage
+#
+#arguments
+#0 log file
+#1 energy range (enclosed with double quotations;e.g. "12 40" for flux 12-40 keV)
+#2 effective digits(optional)
+
+if(ARGV.length<2)then
+print "usage : _hsOld_get_parameter_from_xspec_logfile (xspec logfile name) (energy range enclosed with double quotations;e.g. \"12 40\" for flux 12-40 keV) (errp or errm;optional)\n"
+exit
+end
+
+if(!File.exist?(ARGV[0]))then
+STDERR.puts "file not found"
+exit
+end
+
+
+elow=ARGV[1].split(" ")[0].to_f
+ehigh=ARGV[1].split(" ")[1].to_f
+
+err=""
+if(ARGV[2]!=nil)then
+err=ARGV[2]
+end
+
+flux=0
+flag_flux_dumped=false
+open(ARGV[0]).each{|line|
+	line=line.gsub("(","")
+	line=line.gsub(")","")
+	line=line.gsub("#","")
+	line=line.downcase
+	a=line.split(" ")
+	from=a[-4].to_f
+	to=a[-2].to_f
+	if(line.include?("model") and line.include?("flux") and from==elow and to==ehigh)then
+		flux=a[4].to_f
+		if(err=="")then
+			print flux 
+			exit
+		else
+			flag_flux_dumped=true
+		end
+	end
+	if(flag_flux_dumped==true and line.include?("error") and line.include?("range"))then
+		if(err=="errp")then
+			puts a[7].to_f-flux
+		elsif(err=="errm")then
+			puts a[5].to_f-flux
+		end
+		exit
+	end
+}

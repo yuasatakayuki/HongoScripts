@@ -1,0 +1,45 @@
+#!/bin/bash
+
+#20090511 S. Yamada
+#20101015 Takayuki Yuasa updated for new response
+
+#This script finds appropriate response
+#file for a PIN spectrum from CALDB automatically.
+
+if [ _$1 = _ ];
+then
+echo "usage : hsGSOFindResponseFile (target file; e.g. PIN spectrum file)"
+exit
+fi
+
+infile=$1
+
+nominal=`hsFitsGetHeader $1 0 NOM_PNT`
+
+if [ _$CALDB = _ -o ! -d $CALDB ];
+then
+echo "please set CALDB environmental variable"
+echo "also, please check if CALDB is truely located there"
+echo "e.g. export CALDB=/net/suzaku/process/caldb/2008-10-20"
+exit
+fi
+
+if [ _$nominal = _'HXD' ];
+then
+nom=hxnom
+else
+nom=xinom
+fi
+
+hxdcpf=${CALDB}/data/suzaku/hxd/cpf/
+#response=`ls $hxdcpf/ae_hxd_gso${nom}_20080129.rsp`
+response=`ls $hxdcpf/ae_hxd_gso${nom}_20100524.rsp`
+
+
+if [ ! -f $response ];
+then
+echo "No response file was found in $hxdcpf"
+exit
+fi
+
+echo $response

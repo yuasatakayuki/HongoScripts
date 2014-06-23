@@ -1,0 +1,17 @@
+#!/bin/bash
+
+#20090309 Takayuki Yuasa
+
+#create suzaku data analysis folder
+
+if [ _$1 = _ ];
+then
+
+echo "usage : hsSuzakuMissionTimeToMJD SUZAKU_MISSION_TIME"
+echo "e.g. : hsSuzakuMissionTimeToMJD 261772624.392920"
+exit
+
+fi
+
+aetimecalc mission $1 &> /dev/null
+echo `pget aetimecalc mjd`

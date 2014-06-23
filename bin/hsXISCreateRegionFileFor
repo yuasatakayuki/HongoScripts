@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#20090313 Takayuki Yuasa
+#20090706 Takayuki Yuasa help message was modified
+
+if [ _$2 = _ ];
+then
+echo "hsXISCreateRegionFileFor (input fits file) (output region filename) (radius in arcsec;optional, deafault=120)"
+exit
+fi
+
+inputfile=$1
+outputfile=$2
+
+mkdir `dirname $outputfile` &> /dev/null
+
+if [ _$3 = _ ];
+then
+r=120
+else
+r=$3
+fi
+
+tmp=`hsHashRandom`
+tmp2=`hsHashRandom`
+
+cat << EOF > $tmp
+# Region file format: DS9 version 4.0
+# Filename: FILENAME
+global color=green font="helvetica 10 normal" select=1 highlite=1 edit=1 move=1 delete=1 include=1 fixed=0 source
+fk5
+circle(RA_OBJ,DEC_OBJ,20") # color=red width=3
+circle(RA_OBJ,DEC_OBJ,RADIUS")
+EOF
+
+ra=`hsFitsGetRAOBJ $inputfile`
+dec=`hsGetFitsDecObj $inputfile`
+
+sed -e "s/RA_OBJ/${ra}/g" $tmp > $tmp2
+sed -e "s/DEC_OBJ/${dec}/g" $tmp2 > $tmp
+sed -e "s/RADIUS/${r}/g" $tmp > $tmp2
+
+mv $tmp2 $outputfile
+rm $tmp

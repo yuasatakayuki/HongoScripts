@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+
+#20100929 Takayuki Yuasa
+
+stderr=STDERR
+
+if(ARGV.length!=2)then
+stderr.puts "usage : hsDSVConnectAllColumns (FILE0) (FILE1)"
+stderr.puts "The two files should have the same number of rows."
+exit
+end
+
+if(!File.exists?(ARGV[0]) or !File.exists?(ARGV[1]))then
+stderr.puts "File does not exist..."
+exit
+end
+
+a=[]
+b=[]
+open(ARGV[0]).each{|line|
+a.push(line)
+}
+
+open(ARGV[1]).each{|line|
+b.push(line)
+}
+
+
+if(a.length!=b.length)then
+stderr.puts "file row numbers are not the same."
+exit
+end
+
+for i in 0...a.length do
+line=a[i].chop()+" "+b[i]
+puts line
+end

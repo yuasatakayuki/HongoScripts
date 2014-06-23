@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+
+#20090525 Takayuki Yuasa
+
+#check if the file exists
+if (ARGV.size()!=0) then
+ if !FileTest.exist?(ARGV[0]) then
+  print "file not exist\n"
+  exit
+ end
+else
+ print "usage : hsAsciiTableColumnGetMaxRowNumber (FILENAME) (optional COLUMNNUMBER; default=0)\n"
+ exit
+end
+
+ncol=0
+if (ARGV.size()==2) then
+ ncol=ARGV[1].to_i()
+end
+
+#find the maximum
+file=open(ARGV[0],"r")
+first=true
+max=0
+maxrow=0
+n=0
+i=0
+file.each { |line|
+ column=line.split(" ")[ncol].to_f()
+ if(first)then
+  max=column
+  first=false
+ end
+
+ n=column
+ if(max<n)then
+  max=n
+  maxrow=i
+ end
+ 
+ i=i+1
+}
+
+print maxrow.to_s()+"\n"

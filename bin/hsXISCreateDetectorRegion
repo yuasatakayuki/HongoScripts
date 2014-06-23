@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#20090313 Takayuki Yuasa
+
+if [ _$2 = _ ];
+then
+echo "hsXISCreateDetectorRegion (xis fits file) (output region file)"
+exit
+fi
+
+inputfile=$1
+outputfile=$2
+aemkreg -xis `hsFitsGetMeanEA1 $inputfile` `hsFitsGetMeanEA2 $inputfile` `hsFitsGetMeanEA3 $inputfile` > $outputfile

@@ -1,0 +1,53 @@
+#!/bin/bash
+
+#200903xx Takayuki Yuasa
+#20090608 Takayuki Yuasa added faking CXB
+#20091023 Takayuki Yuasa added extra command file
+
+pwd=`pwd`
+if [ `basename $pwd` != spectral_analysis ];
+then
+echo "run this script at analysis/pin/spectral_analysis/ folder."
+exit
+fi
+
+read -p "input tag name > " tag
+if [ _$tag = _ ];
+then
+echo "tag name empty...exit"
+exit
+fi
+
+read -p "extra condition file (which contains xselect commands) or type \"none\" > " extracommandfile
+if [ -f $extracommandfile -o $extracommandfile = "none" ];
+then
+if [ -f $extracommandfile ];
+then
+ echo "extra command file ($extracommandfile) was found...OK"
+else
+ echo "no extra command file is used"
+fi
+else
+echo "extra command file not found...exit"
+echo "(if you do not have an extra command file, please type \"none\""
+exit
+fi
+
+#create gti
+mkdir -p gtis/$tag pis/$tag plots/$tag &> /dev/null
+hsPINMergeGTI "../data/pin_evt.evt+2" "../data/pin_nxb.evt+2" gtis/$tag/cleaned_evt_nxb_merged.gti
+
+#extract spectra
+hsPINExtractSpectrumWithGTI ../data/pin_evt.evt ../data/pseudo.evt gtis/${tag}/cleaned_evt_nxb_merged.gti pis/${tag}/pin_evt_gti_evt_nxb_merged.pi $extracommandfile
+hsPINExtractSpectrumWithGTI ../data/pin_nxb.evt none gtis/${tag}/cleaned_evt_nxb_merged.gti nxbs/${tag}/pin_nxb_gti_evt_nxb_merged.pi $extracommandfile
+
+#fake cxb
+hsPINFakeCXBAuto pis/${tag}/pin_evt_gti_evt_nxb_merged.pi cxbs/cxb.fake
+
+#plot
+hsPINCreateSpectrumCheckPlot \
+ pis/${tag}/pin_evt_gti_evt_nxb_merged_dtcor_bin20.pi \
+ nxbs/${tag}/pin_nxb_gti_evt_nxb_merged_times10.pi \
+ nxbs/${tag}/pin_nxb_gti_evt_nxb_merged_times200.pi \
+ `hsPINFindResponseFileAuto pis/${tag}/pin_evt_gti_evt_nxb_merged_dtcor_bin20.pi` \
+ plots/${tag}/pin_evt_gti_evt_nxb_merged_bin20.pdf

@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+
+#20100826 Takayuki Yuasa
+
+if(ARGV.length==0)then
+ STDERR.puts "give file to be dumped reverseley..."
+ exit
+end
+
+file=ARGV[0]
+if(!File.exists?(file))then
+ STDERR.puts "file not found..."
+ exit
+end
+
+a=[]
+open(file).each{|line|
+ a.push(line)
+}
+
+for i in 1...a.length do
+puts a[-i]
+end
+puts a[0]

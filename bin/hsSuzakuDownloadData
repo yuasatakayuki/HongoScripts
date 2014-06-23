@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#20090526 Takayuki Yuasa
+#20090528 Takayuki Yuasa version option added
+
+DEFAULT_VERSION=2
+
+if [ _$1 = _ ];
+then
+echo "usage : hsSuzakuDownloadData (obsid) (version;optional. default=2)"
+exit
+fi
+
+if [ _$2 != _ ];
+then
+version=$2
+else
+version=$DEFAULT_VERSION
+fi
+
+local=./
+option='-nv -m -np -nH --cut-dirs=3 -P .'
+obsid=$1
+
+wget $option -R 'index.html*' "http://darts.isas.jaxa.jp/pub/suzaku/ver${version}/$obsid/"
+

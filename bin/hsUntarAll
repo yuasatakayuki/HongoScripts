@@ -1,0 +1,5 @@
+#!/bin/bash
+
+#2013-09-27 Takayuki Yuasa
+
+for file in `ls *gz`;do tar zxf $file;done

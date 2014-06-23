@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#20080728 Takayuki Yuasa
+
+for file in `ls *ps`;
+do
+
+ps2pdf $file
+
+done
+
+rm all.pdf &> /dev/null
+pdftk *pdf cat output all.pdf

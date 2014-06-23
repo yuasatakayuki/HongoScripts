@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#20100809 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo "hsGetFitsDecNom FILE"
+exit
+fi
+
+i=`hsFitsIsHeaderKeywordDefined $1 dec_nom`
+if [ _$i != _ ]; then
+hsFitsGetHeader $1 $i DEC_NOM
+fi

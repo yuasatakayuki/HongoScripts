@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#20090309 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo "hsGetFitsDecObj FILE"
+exit
+fi
+
+
+hsFitsGetHeader $1 0 DEC_OBJ

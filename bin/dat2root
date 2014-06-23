@@ -1,0 +1,66 @@
+#!/bin/bash
+
+if [ _$1 = _ ];
+then
+echo "usage : dat2root (input data file)"
+cat << EOF
+note : input data file must contain number of
+entries for each bin in single column.
+EOF
+exit
+fi
+
+
+#parameter set
+infile=$1
+outfile=`dirname $1`/`basename $1 .dat`.root
+read -p "input bin numer [default 4096] > " binnumber
+read -p "input bin start [default 0 ] > " binstart
+read -p "input bin end [default 4096] > " binend
+
+if [ _$binnumber = _ ];
+then
+binnumber=4096
+fi
+
+if [ _$binstart = _ ];
+then
+binstart=0
+fi
+
+if [ _$binend = _ ];
+then
+binend=4096
+fi
+
+cat << EOF
+A histogram will be created using ROOT command like:
+ TH1F* histogram=new TH1F("histogram","histogram",$binnumber,$binstart,$binend);
+ 
+The histogram is saved to ${outfile}.
+EOF
+
+cat << EOF > dat2root_temp.c
+void dat2root_temp(){
+ ifstream ifs("$infile");
+ TH1F* histogram=new TH1F("histogram","histogram",$binnumber,$binstart,$binend);
+ int bin=0;
+ while(!ifs.eof()){
+  double entry;
+  ifs >> entry;
+  histogram->SetBinContent(bin,entry);
+  bin++;
+  //cout << bin << " " << entry << endl;
+ }
+ TFile tfile("$outfile","recreate");
+ histogram->Write();
+}
+EOF
+
+#execute
+root -l << EOF
+.x dat2root_temp.c
+EOF
+
+#delete temporary file
+rm -r dat2root_temp.c

@@ -1,0 +1,64 @@
+#!/bin/bash
+
+#20090902 Takayuki Yuasa
+#20100406 Takayuki Yuasa
+
+if [ _$8 = _ ];
+then
+
+cat << EOF
+hsPINCalculateFoldedLightcurve \\
+                  (1:input event file) \\
+                  (2:output fits file prefix)   \\
+                  (3:output plot file prefix)   \\
+                  (4:energy low in keV;  or none) \\
+                  (5:energy high in keV; or none) \\
+                  (6:folding period in sec) \\
+                  (7:number of bins per phase) \\
+                  (8:numer of bins per interval) \\
+                  (9:number of intervals per frame;optional)
+
+EOF
+exit
+
+fi
+
+#parameters
+windowfile=$hongoscriptsdir/astrophysics/etc/hsFtoolsXronosNoWindow.wi
+
+inputfile=$1
+outputprefix=$2
+plotprefix=$3
+elow=$4
+ehigh=$5
+period=$6
+numberofbinsperphase=$7
+numberofbinsperinterval=$8
+
+if [ _${9} = _ ];
+then
+numberofintervalsperframe=1000000
+else
+numberofintervalsperframe=${10}
+fi
+
+tmpeventfile=`hsHashRandom`.evt
+
+#filtering condition
+tmpconditionfile=`hsHashRandom`
+hsPINCreateFilterCommandsWithEnergyFiltering $tmpconditionfile $elow $ehigh
+#check if the condition file is successfully created
+if [ ! -f $tmpconditionfile ];
+then
+echo "filter condition is not correct...exit"
+exit
+fi
+
+#event selection
+hsFitsFilterEventFile $inputfile $tmpeventfile "`cat $tmpconditionfile`"
+
+#calculate folded lightcurve
+hsFitsCalculateFoldedLightcurve $tmpeventfile $outputprefix $plotprefix $period $numberofbinsperphase $numberofbinsperinterval $numberofintervalsperframe
+
+#delete temporary files
+rm -f $tmpeventfile $tmpconditionfile

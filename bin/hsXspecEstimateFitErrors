@@ -1,0 +1,171 @@
+#!/bin/bash
+
+if [ _$3 = _ ]; then
+cat << EOF
+usage : `basename $0` (xspec xcm file) (output log file name) (parameter number 1) (parameter number 2) ... (parameter number N)
+
+The XCM file is used to load data and the best-fit model.
+Output which contains a log of "show all", "show free", "show fit", 
+and results of "error #" is saved as "output log file name".
+At least a parameter should be given.
+
+
+For multi-core environment, concurrent simultaneous error estimation
+in multiple threads can be performed. To use this function, define
+the environmental variable XSPEC_ESTIMATE_FIT_ERRORS_NTHREADS with
+desired value. For example type the line below before executing this
+script;
+
+export XSPEC_ESTIMATE_FIT_ERRORS_NTHREADS=4
+
+EOF
+exit
+fi
+
+xcm=$1
+log=$2
+shift 2
+
+#check xcm
+if [ ! -f $xcm ]; then
+echo "XCM file ($xcm) is not found..."
+exit -1
+fi
+
+
+#check multi thread
+if [ _$XSPEC_ESTIMATE_FIT_ERRORS_NTHREADS = _ ]; then
+ #not in MT
+ N=1
+else
+ N=`perl -e "print int('$XSPEC_ESTIMATE_FIT_ERRORS_NTHREADS')"`
+ if [ _$N = _0 ]; then
+  echo "XSPEC_ESTIMATE_FIT_ERRORS_NTHREADS is not correct"
+  exit -1
+ fi
+ if [ _$N != _1 ]; then
+  echo "Running in multi-thread environment (# of maximum threads = $N)" 
+ fi
+fi
+
+
+#define function
+function deleteTempFiles(){
+for file in $tmp_list; do
+ rm -f $file
+done
+for file in `cat $db_xcms_before_after | awk '{print $3}'`; do
+rm -f $file
+done
+rm -f $db_xcms_before_after
+}
+
+function checkXCMBeforeAfter(){
+echo "Checking fit result..."
+for file in `cat $db_xcms_before_after | awk '{print $1}'`; do
+ nparam=`hsDBGet $db_xcms_before_after $file 1`
+ xcm_after=`hsDBGet $db_xcms_before_after $file 2`
+ if [ ! -f $file ]; then
+  echo "Error occured when checking fit result"
+  exit -1
+ fi
+ tmp=`tempfile`
+ grep "Warning: New best fit found" $file > $tmp
+ if [ `hsFileCountLineNumber $tmp` != 0 ]; then
+  echo "Fit result changed when executing 'error $nparam'! (new best fit found...)"
+  mv $xcm_after new_fit_err_${nparam}.xcm
+  echo "See new_fit_err_${nparam}.xcm ..."
+  deleteTempFiles
+  #rm -f $tmp
+  exit -1
+ fi
+ rm -f $tmp
+done
+rm -f $db_xcms_before_after
+touch $db_xcms_before_after
+echo "Fit result has not changed so far..."
+}
+
+#main loop
+nthread=0
+tmp_list=""
+db_xcms_before_after=`tempfile`
+touch $db_xcms_before_after
+
+echo "Using temporary DB file : $db_xcms_before_after"
+
+for n in $@; do
+sleep 1
+
+#create temporary log file
+tmp=`tempfile`
+tmp_list="$tmp_list $tmp"
+xcm_after=`tempfile`.xcm
+
+#register xcm file names to db
+echo "$tmp $n $xcm_after" >> $db_xcms_before_after
+
+echo "Estimating errors for parameter $n"
+echo " -> Result temporarily stored in $tmp"
+xspec << EOF > /dev/null &
+@$xcm
+query yes
+fit 1000
+log $tmp
+error $n
+log none
+save all $xcm_after
+exit
+EOF
+nthread=`calc "${nthread}+1"`
+echo "$nthread thread(s) running..."
+
+if [ $nthread = $N ]; then
+echo "Waiting..."
+wait
+nthread=0
+checkXCMBeforeAfter
+fi
+
+if [ $nthread = 10 ]; then
+echo "Waiting 10 threads..."
+wait
+nthread=0
+checkXCMBeforeAfter
+fi
+
+done
+
+
+#final wait
+if [ $nthread != 0 ]; then
+echo "Waiting..."
+wait
+checkXCMBeforeAfter
+fi
+
+
+#create summary
+echo "Creating final output..."
+xspec << EOF
+@$xcm
+fit 1000
+log $log
+show all
+show free
+show fit
+log none
+exit
+EOF
+
+#append error estimation results
+for file in $tmp_list; do
+cat $file >> $log
+done
+
+#delete temporary files
+deleteTempFiles
+
+
+
+echo "Completed."

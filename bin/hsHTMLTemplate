@@ -1,0 +1,89 @@
+#!/usr/bin/env ruby
+
+#Takayuki Yuasa 20140522
+
+if(ARGV.length>0 and (ARGV[0]=="--help" or ARGV[0]=="-h"))then
+  STDERR.puts "Provide: body content can be provided via STDIN or file"
+  exit
+end
+
+inputFile=""
+if(ARGV.length>0)then
+  inputFile=ARGV[0]
+  if(!File.exist?(inputFile))then
+    inputFile=""
+  end
+end
+
+puts <<EOS
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>__Title__</title>
+    <!-- <link rel="stylesheet" href="style.css"> -->
+    <!-- <script src="script.js"></script> -->
+    <style>
+body {
+    margin: 30px;
+    font-family: "HevleticaNeue", Helvetica, san-serif;
+    font-weight: light;
+    font-size: 12pt;
+}
+table {
+        background: #eee;
+        border: solid 1px #bbb;
+        border-collapse:collapse;
+}
+tr {
+        text-align: center;
+        margin: 0;
+}
+th {
+        margin: 5ppx;
+        border: solid 1px #bbb;
+        background: orange;
+}
+td {
+        padding: 5px;
+        border: solid 1px #bbb;
+}
+caption {
+        margin-bottom: 5px;
+}
+h1{
+        font-size: 30pt;
+}
+h2{
+        font-size: 20pt;
+}
+h3{
+        font-size: 15pt;
+        margin-top: 1.5em;
+        margin-bottom: 0.2em;
+}
+a {
+        color: DodgerBlue;
+        text-decoration: none;
+}
+</style>
+</head>
+<body>
+EOS
+
+if(inputFile!="")then
+    #file
+    puts File.read(inputFile)
+else
+    #STDIN
+    if File.pipe?(STDIN) || File.select([STDIN], [], [], 0) != nil then
+        while line = STDIN.gets
+            puts line
+        end
+    end
+end
+
+puts <<EOS
+</body>
+</html>
+EOS

@@ -1,0 +1,45 @@
+#!/bin/bash
+
+#20090309 Takayuki Yuasa
+
+pwd=`pwd`
+if [ `basename $pwd` != lightcurve_analysis ];
+then
+echo "run this script at analysis/pin/lightcurve_analysis/ folder."
+exit
+fi
+
+read -p "input tag name > " tag
+if [ _$tag = _ ];
+then
+echo "tag name empty...exit"
+exit
+fi
+
+mkdir lcfiles/${tag} &> /dev/null
+mkdir gtis/${tag} &> /dev/null
+
+#merge gtis
+hsPINMergeGTI \
+../data/pin_evt.evt+2 \
+../data/pin_nxb.evt+2 \
+gtis/${tag}/cleaned_evt_nxb_merged.gti
+
+for binsize in 100 300 600 900;
+do
+
+hsPINExtractLightcurveWithGTI \
+../data/pin_evt.evt \
+../data/pin_nxb.evt \
+../data/pseudo.evt \
+gtis/${tag}/cleaned_evt_nxb_merged.gti \
+lcfiles/${tag}/pin_evt ${binsize}
+
+hsPINLightcurveCorrectDeadTimeAndNXB \
+lcfiles/${tag}/pin_evt_evt_bin${binsize}.lc \
+lcfiles/${tag}/pin_evt_nxb_bin${binsize}.lc \
+lcfiles/${tag}/pin_evt_pse_bin${binsize}.lc \
+lcfiles/${tag}/pin_evt_bin${binsize}_corrected_for_dt_nxb \
+../auxil/ae*.ehk
+
+done

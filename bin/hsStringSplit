@@ -1,0 +1,18 @@
+#!/usr/bin/env perl
+
+#20060715 perlのsplit関数を簡単にbashなどから利用するためのスクリプト
+#20100124 perl path fixed
+
+#hsStringSplit delimitter text index_of_output
+#index_of_outputで指定した位置の要素が出力される
+#textの行末の改行はchompで切り落とされる
+
+$scriptname="hsStringSplit";
+$usage="usage $scriptname delimitter text index_of_output\n";
+
+if(@ARGV == 3){}else{die "hsStringSplit : ERROR lack of arguments...\n;$usage";}
+
+chomp($ARGV[1]);
+
+@array=split($ARGV[0],$ARGV[1]);
+print $array[$ARGV[2]];

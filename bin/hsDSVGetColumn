@@ -1,0 +1,33 @@
+#!/usr/bin/env perl
+
+#20081123 Takayuki Yuasa
+#20090512 Takayuki Yuasa script name changed
+#20100124 perl path fixed
+
+if(@ARGV!=2 and @ARGV!=3){
+ print "usage : hsDSVGetColumn FILE COLUMN (deimiter)";
+ exit;
+}
+  
+$tmp=".matrix_column.pl.tmp";
+system("hsStringDeleteMultipleSpaces $ARGV[0] > $tmp");
+
+open(FILE,"$tmp");
+@file=<FILE>;close FILE;
+
+$column=$ARGV[1];
+
+if($ARGV[2] eq ""){
+ $delimiter=" ";
+}else{
+ $delimiter=$ARGV[2];
+}
+
+foreach $line (@file){
+ chomp($line);
+ @a=split($delimiter,$line);
+ print $a[$column]."\n";
+}
+
+system("rm $tmp");
+

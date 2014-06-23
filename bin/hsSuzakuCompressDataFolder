@@ -1,0 +1,38 @@
+#!/bin/bash
+
+#20090526 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo "usage : hsSuzakuCompressDataFolder (suzaku analysis folder name)"
+exit
+fi
+
+folder=$1
+
+if [ ! -d $folder ];
+then
+echo "analysis folder '$folder' not found...exit"
+exit
+fi
+
+for file in `ls $folder/data/?????????/???/event_uf/ae*.evt`;
+do
+
+#if there is compressed file,
+if [ -f ${file}.gz ];
+then
+#just delete the uncompressed file.
+echo "`basename $file`.gz exists...deleting `basename $file`..."
+rm -f $file &> /dev/null
+echo "done"
+else
+#compress
+cd `dirname $file`
+echo "compressing `basename $file` in data folder of $folder..."
+gzip `basename $file` &> /dev/null
+echo "done"
+cd - &> /dev/null
+fi
+
+done

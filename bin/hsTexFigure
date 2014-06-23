@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+
+#2013-08-29 Takayuki Yuasa
+
+caption=""
+label=""
+file=""
+width=""
+height=""
+
+sizeOption=[]
+
+for option in ARGV do
+	if(option.include?("caption="))then
+		caption=option.gsub("caption=","")
+	end
+
+	if(option.include?("file="))then
+		file=option.gsub("file=","")
+	end
+
+	if(option.include?("width="))then
+		width=option.gsub("width=","")
+		if(width.include?("hsize"))then
+			sizeOption << "width=\\hsize"
+		else
+			sizeOption << "width=#{width}"
+		end
+	end
+
+	if(option.include?("height="))then
+		height=option.gsub("height=","")
+		sizeOption << "height=#{height}"
+	end
+
+	if(option.include?("label="))then
+		label=option.gsub("label=","")
+	end
+end
+
+puts <<EOS
+\\begin{figure}[htb]
+	\\begin{center}
+		\\includegraphics[#{sizeOption.join(",")}]{#{file}}
+		\\caption{#{caption}}
+		\\label{#{label}}
+	\\end{center}
+\\end{figure}
+EOS

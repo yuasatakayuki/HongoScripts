@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#20090522 Takayuki Yuasa updated
+
+if [ _$1 = _ ];
+then
+echo "hsGetFitsExposure FILE (value)"
+exit
+fi
+
+file=$1
+tmp=`hsHashRandom`.fits
+ln -s $file $tmp
+
+if [ _$2 = _ ];
+then
+
+i=`hsFitsIsHeaderKeywordDefined $tmp EXPOSURE`
+
+if [ _$i != _ ]; then
+hsFitsGetHeader $tmp $i exposure
+fi
+
+else
+
+hsFitsSetHeader $tmp 0 exposure $2
+hsFitsSetHeader $tmp 1 exposure $2
+hsFitsSetHeader $tmp 2 exposure $2
+
+fi
+
+
+rm -r $tmp

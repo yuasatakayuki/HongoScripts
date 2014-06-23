@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+
+#20090611 Takayuki Yuasa
+
+if(ARGV.length==0)then
+print "usage : hsQDPConvertTexStringToQDP (tex style text to be converted)\n"
+exit
+end
+
+line=ARGV[0]
+
+line=line.gsub(/\^\{(.*?)\}/,'\\u\1\\d')
+line=line.gsub(/_\{(.*?)\}/,'\\d\1\\u')
+print line

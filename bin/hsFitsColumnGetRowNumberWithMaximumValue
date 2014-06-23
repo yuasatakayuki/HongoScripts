@@ -1,0 +1,34 @@
+#!/bin/bash
+
+#20090306 Takayuki Yuasa
+
+if [ _$3 = _ ];
+then
+echo "hsFitsColumnGetRowNumberWithMaximumValue FILE EXTENSION COLUMN"
+exit
+fi
+
+tmp=`hsHashRandom`
+
+hsFitsDumpColumns ${1} ${2} $3 yes > $tmp
+
+perl << EOF
+open(FILE,"$tmp");
+@file=<FILE>;close FILE;
+
+@a=split(" ",\$file[0]);
+\$max=\$a[1];
+\$maxrow=\$a[0];
+
+foreach \$line (@file){
+ @a=split(" ",\$line);
+ if(\$max<\$a[1]){
+  \$max=\$a[1];
+  \$maxrow=\$a[0];
+ }
+}
+
+print \$maxrow;
+EOF
+
+rm $tmp

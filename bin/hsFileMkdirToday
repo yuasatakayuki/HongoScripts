@@ -1,0 +1,18 @@
+#!/bin/bash
+
+#20080627 Takayuki Yuasa
+#20090601 Takayuki Yuasa for multiple input directory name
+
+if [ _$1 = _ ];
+then
+dir=.
+mkdir $dir/`date +'%Y%m%d'` &> /dev/null
+else
+
+for dir in $@;
+do
+mkdir $dir/`date +'%Y%m%d'` &> /dev/null
+done
+fi
+
+

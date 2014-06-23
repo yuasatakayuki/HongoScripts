@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+
+#20081126 Takayuki Yuasa
+#20110724 Takayuki Yuasa from python to ruby
+
+for value in ARGV do
+
+print value.to_i().to_s(2)+"\n"
+
+end

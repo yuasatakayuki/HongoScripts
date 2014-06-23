@@ -1,0 +1,257 @@
+#!/bin/bash
+
+#20090305 Takayuki Yuasa
+#20090527 Takayuki Yuasa added energy band to title
+#20100115 Takayuki Yuasa output file names and output folder for plots were changed
+#20100124 Takayuki Yuasa do away with gawk. use awk instead
+
+if [ _$4 = _ ];
+then
+cat << EOF
+usage :
+hsPINLightcurveCorrectDeadTimeAndNXB (event lightcurve file) (nxb lightcurve file) (pseudo lightcurve file) (output filename prefix) (ehk file; optional) (output plot prefix; optional)
+
+note : output files will be created like (output file prefix).pdf and (output file prefix).lc.
+If (output plot prefix) is specified, plots are saved as (output plot prefix).pdf.
+EOF
+exit
+fi
+
+################################
+#parameter set
+################################
+evtlc=$1
+nxblc=$2
+pselc=$3
+outputprefix=$4
+outputdir=`dirname $4`
+if [ _$5 = _none ];
+then
+ ehkfile="none"
+else
+ ehkfile=$5
+fi
+if [ _$6 = _ ];
+then
+outputplotprefix=$outputprefix
+else
+outputplotprefix=$6
+fi
+
+#get pha min max from evtlc
+phalowcut=`hsFitsGetHeader ${evtlc} 1 phalcut`
+phahighcut=`hsFitsGetHeader ${evtlc} 1 phahcut`
+energy_lowcut=`hsPINPIToEnergy $phalowcut`
+energy_highcut=`hsPINPIToEnergy $phahighcut`
+
+#log file
+logfile=${outputprefix}.log
+tmp=`hsHashRandom`
+tmpoutfile=`hsHashRandom`
+
+################################
+#execution
+################################
+export PGPLOT_TYPE="/null"
+rm -f $logfile
+
+#output files
+evtlc_dtcor=${outputprefix}_evt_dtcor.lc
+nxblc_times10=${outputprefix}_nxb_times10.lc
+evt_sub_nxb=${outputprefix}_corrected_for_dt_nxb.lc
+evt_sub_nxb_ps=${outputplotprefix}_corrected_for_dt_nxb.ps
+evt_sub_nxb_pco=${outputplotprefix}_corrected_for_dt_nxb.pco
+evt_sub_nxb_qdp=${outputplotprefix}_corrected_for_dt_nxb.qdp
+evt_sub_nxb_qdppco=${outputplotprefix}_corrected_for_dt_nxb
+
+#temporary files
+pselc1_4=`hsHashRandom`
+tmpqdp=`hsHashRandom`.qdp
+localqdppco=`hsHashRandom`
+
+#cleanup
+rm -f ${evt_sub_nxb} ${pselc1_4}
+rm -f $evt_sub_nxb_pco $evt_sub_nxb_qdp
+hsQDPDeleteQDPFiles $evt_sub_nxb_qdp
+hsQDPDeleteQDPFiles $evt_sub_nxb_qdppco
+
+#do
+cp $evtlc ${evtlc_dtcor}
+echo "PSEUDO/4"
+fcalc ${pselc}+1 ${pselc1_4} DTCOR  "RATE/4" clobber=yes 2>&1 | tee -a $logfile
+faddcol ${evtlc_dtcor}+1 ${pselc1_4}+1 DTCOR 2>&1 | tee -a $logfile
+
+echo "RATE/(PSEUDO/4)"
+fcalc ${evtlc_dtcor}+1 ${evtlc_dtcor} RATE "RATE/DTCOR" clobber=yes 2>&1 | tee -a $logfile
+fcalc ${evtlc_dtcor}+1 ${evtlc_dtcor} ERROR "ERROR/DTCOR" clobber=yes 2>&1 | tee -a $logfile
+fcalc ${nxblc}+1 ${nxblc_times10} RATE "RATE/10" clobber=yes 2>&1 | tee -a $logfile
+fcalc ${nxblc_times10}+1 ${nxblc_times10} ERROR "ERROR/10" clobber=yes 2>&1 | tee -a $logfile
+
+lcmath ${evtlc_dtcor} ${nxblc_times10} ${evt_sub_nxb} multi=1 multb=1 addsubr=no 2>&1 | tee -a $logfile
+
+max=`hsFitsColumnGetMaximumValue ${evtlc_dtcor} 1 RATE`
+ymax=`calc $max*1.5`
+tstart=`hsFitsGetHeader ${evtlc_dtcor} 1 TSTART`
+binsize=`hsFitsGetHeader ${evtlc_dtcor} 1 TIMEDEL`
+
+#dump lightcurves
+cat << EOF > $tmpqdp
+SKIP SING
+READ SERR 2
+!
+EOF
+hsFitsDumpColumns ${evtlc_dtcor} 1 TIME,RATE,ERROR >> $tmpqdp
+echo "NO NO NO" >> $tmpqdp
+hsFitsDumpColumns ${nxblc_times10} 1 TIME,RATE,ERROR >> $tmpqdp
+echo "NO NO NO" >> $tmpqdp
+hsFitsDumpColumns ${evt_sub_nxb} 1 TIME,RATE,ERROR >> $tmpqdp
+echo "NO NO NO" >> $tmpqdp
+
+#create qdp for a plot without saa nor cor
+echo "#1 $tmpqdp"
+qdp $tmpqdp << EOF 2>&1 | tee -a $logfile
+win all
+fo ro
+yplot 1 2 3
+view .1 .1
+loc 0 0.301999986 1 0.899999976
+r y 0 $ymax
+cs 1.3
+lwidth 3
+lwidth 3 on 1..50
+lwidth 3
+lwidth 3 on 1..50
+lab nx on
+la t 
+la f `hsFitsGetTargetName ${evtlc_dtcor}` / $binsize s bin / ${energy_lowcut}-${energy_highcut} keV
+lab x TIME s since `hsSuzakuMissionTimeToUTC $tstart`
+lab y Count s\u-1\d
+r y 0 $ymax
+cs 1.3
+lwidth 3
+lwidth 3 on 1..50
+lwidth 3
+lwidth 3 on 1..50
+mark 17 on 1
+mark 17 on 2
+mark 17 on 3
+col 1 on 1
+col 2 on 2
+col 3 on 3
+la 1 "
+la 2 "
+lab 10 pos 10000 `calc $ymax*0.87` col 1 "ALL"
+lab 20 pos 10000 `calc $ymax*0.80` col 2 "NXB"
+lab 30 pos 10000 `calc $ymax*0.73` col 3 "ALL-NXB"
+hard ${evt_sub_nxb_ps}/cps
+we ${evt_sub_nxb_qdppco}
+we ${localqdppco}
+exit
+
+EOF
+cd `dirname ${evt_sub_nxb_ps}` &> /dev/null
+ps2pdf `basename ${evt_sub_nxb_ps}`
+cd -
+
+#cor,saa plot
+if [ -f $ehkfile ];
+then
+hsPINExtractLightcurveOfCORAndSAA $ehkfile $outputprefix
+#this script creates files below:
+#${outputprefix}_cor.lc
+#${outputprefix}_saa.lc
+fi
+
+##get xmin xmax using qdp
+tmplog=`hsHashRandom`
+echo "#2 $evt_sub_nxb_qdppco"
+qdp $evt_sub_nxb_qdppco << EOF > $tmplog
+/xw
+info
+exit
+EOF
+tstart=`hsFitsGetHeader $evtlc 1 tstart`
+tstop=`hsFitsGetHeader $evtlc 1 tstop`
+min=0
+max=`calc "$tstop-$tstart"`
+offset=`calc "($max-$min)/100*3"`
+min=`calc $min-$offset`
+max=`calc $max+$offset`
+rxminmax="r x $min $max"
+rm $tmplog
+
+##qdp edit
+hsFitsDumpColumns ${outputprefix}_cor.lc 1 TIME,COR | awk "{print \$1-`hsFitsGetHeader ${evt_sub_nxb} 1 TSTART`,\$2,0}" > ${outputplotprefix}_cor.qdp
+hsFitsDumpColumns ${outputprefix}_saa.lc 1 TIME,SAA_HXD | awk "{print \$1-`hsFitsGetHeader ${evt_sub_nxb} 1 TSTART`,\$2,0}" > ${outputplotprefix}_saa.qdp
+
+cat << EOF >> ${tmpqdp}
+NO NO NO
+READ SERR 8 9
+EOF
+cat ${outputplotprefix}_saa.qdp >> ${tmpqdp}
+cat << EOF >> ${tmpqdp}
+NO NO NO
+READ SERR 15 16
+EOF
+cat ${outputplotprefix}_cor.qdp >> ${tmpqdp}
+
+##execute qdp
+rm -f ${outputplotprefix}_with_saa_cor.ps
+rm -f ${outputplotprefix}_with_saa_cor.qdp ${outputprefix}_with_saa_cor.pco
+qdp ${tmpqdp} << EOF
+/xw
+ti of
+@${localqdppco}.pco
+
+win 3
+yplot 5
+col 15 on 5
+line on 5
+$rxminmax
+view 0 0 1 1
+loc .1 .1 .9 .2
+la y COR
+lab x TIME s since `hsSuzakuMissionTimeToUTC $tstart`
+
+win 2
+$rxminmax
+yplot 4
+line on 4
+col 8 on 4
+la nx off
+view 0 0 1 1
+loc .1 .2 .9 .3
+la y SAA
+
+win 1
+yplot 1 2 3
+col 1 on 1
+col 2 on 2
+col 3 on 3
+$rxminmax
+la nx off
+view 0 0 1 1
+loc .1 .3 .9 .9
+la y1 Counts s\u-1\d
+r y1 0 $ymax
+r y 0 $ymax
+
+win all
+plot
+hard ${outputplotprefix}_with_saa_cor.ps/cps
+we ${outputplotprefix}_with_saa_cor
+exit
+EOF
+
+cd `dirname ${evt_sub_nxb_ps}` &> /dev/null
+ps2pdf `basename ${outputprefix}_with_saa_cor.ps`
+cd -
+
+
+#cleaning again
+rm -f $tmp ${tmpoutfile}*
+rm -f ${pselc1_4} ${tmpqdp}.qdp ${tmpqdp}.pco $localqdppco
+
+################################
+#log
+################################

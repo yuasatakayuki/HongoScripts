@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#20090602 Takayuki Yuasa
+
+if [ _$2 = _ ];
+then
+echo "usage : hsPINFakeCXBAuto (pi file;for response search) (output cxb filename)"
+exit
+fi
+
+flatresp=`hsPINFindFlatResponseFileAuto $1`
+hsPINFakeCXB $flatresp $2

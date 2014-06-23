@@ -1,0 +1,99 @@
+#!/bin/bash
+
+#20090305 Takayuki Yuasa
+#20090526 Takayuki Yuasa cpd deleted (xspec no window mode)
+
+#create an xcm file that reads PIN pi file, NXB file, responses, and then
+#cpd /xw, setplot energy, ignore 1-30:**-10. 50.-**
+
+if [ _$4 = _ ];
+then
+cat << EOF
+usage:
+hsPINCreateSpectrumCheckPlot (spectrum file) (nxb file) (5% of nxb file or 'none') (response file) (output pdf filename) (additional qdp command fil;optional)
+Example:
+hsPINCreateSpectrumCheckPlot \\
+    pis/20090304/pin_evt_gti_evt_nxb_merged_bin20.pi \\
+    pis/20090304/pin_nxb_gti_evt_nxb_merged_times10.pi \\
+    pis/20090304/pin_nxb_gti_evt_nxb_merged_times200.pi \\
+    /net/xdata/astro/caldb/data/suzaku/hxd/cpf//ae_hxd_pinhxnome4_20080129.rsp \\
+    plots/20090304/pin_evt_gti_evt_nxb_merged_bin20.pdf
+EOF
+exit
+fi
+
+#parameter set
+evtpi=$1
+nxbpi=$2
+if [ $3 = none ];
+then
+nxb5perpi=""
+else
+nxb5perpi=$3
+fi
+response=$4
+outputpdf=$5
+outputps=`dirname $5`/`basename $5 .pdf`.ps
+outputxcm=`dirname $5`/`basename $5 .pdf`.xcm
+outputplotxcm=`dirname $5`/`basename $5 .pdf`_plot.xcm
+outputqdp=`dirname $5`/`basename $5 .pdf`.qdp
+outputpco=`dirname $5`/`basename $5 .pdf`.pco
+output=`dirname $5`/`basename $5 .pdf`
+logfile=${5}.log
+additionalqdp=$6
+
+target=`hsFitsGetTargetName $evtpi`
+
+#xspec nowindow mode
+export PGPLOT_TYPE=""
+
+#create folder
+mkdir -p `dirname $outputpdf`
+
+#create xcm
+hsPINCreateXCMForAnalysisTag $evtpi $nxbpi $response $outputxcm $nxb5perpi
+evtexposure=`hsGetFitsExposure $evtpi`
+evtexposure=`calc $evtexposure/1000`
+nxbexposure=`hsGetFitsExposure $nxbpi`
+nxbexposure=`calc $nxbexposure/1000`
+
+rm -f $outputpco $outputqdp
+cat << EOF > $outputplotxcm
+@$outputxcm
+iplot
+scr whi
+ti off
+cs 1.3
+lwidth 3
+lwidth 3 on 1..50
+la t
+la f $target
+la y Counts s\u-1\d keV\u-1
+la x Energy keV
+la ox All=$evtexposure ks NXB=$nxbexposure ks
+fo ro
+EOF
+
+if [ _$additionalqdp != _ ];
+then
+cat $additionalqdp >> $outputplotxcm
+fi
+
+cat << EOF >> $outputplotxcm
+hard $outputps/cps
+we $output
+exit
+
+exit
+yes
+
+EOF
+
+xspec < $outputplotxcm 2>&1 | tee $logfile
+
+#ps2pdf
+echo "ps2pdf"
+echo "cd `dirname $outputpdf`"
+cd `dirname $outputpdf`
+ps2pdf `basename $outputps`
+cd -

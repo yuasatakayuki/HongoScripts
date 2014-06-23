@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#2013-10-23 Takayuki Yuasa
+
+if [ _$1 = _ ]; then
+echo "give a folder / folders of which gzip files should be expanded."
+exit
+fi
+
+for dir in $@; do
+	if [ -d $dir ]; then
+		pushd $dir &> /dev/null
+			for file in `ls *gz`; do
+				echo "Expanding $file ..."
+				gzip -d $file
+			done
+		popd &> /dev/null
+	fi
+done

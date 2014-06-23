@@ -1,0 +1,13 @@
+#!/bin/bash
+
+#20080716 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+dir=.
+else
+dir=$1
+fi
+
+mkdir $dir/pdf &> /dev/null
+

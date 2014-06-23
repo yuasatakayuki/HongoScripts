@@ -1,0 +1,62 @@
+#!/bin/bash
+
+#20090511  S.Yamada
+#20090526 Takayuki Yuasa cpd deleted (xspec no window mode)
+
+if [ _$5 = _ ];
+then
+cat << EOF
+usage:
+hsGSOCreateXCMForAnalaysisTag (spectrum file) (nxb file) (response file) (output xcm filename) (additional spectrum) (arffile)
+Example:
+hsPINCreateSpectrumCheckPlot \\
+    pis/20090304/gso_evt_gti_evt_nxb_merged_binGSO.pi \\
+    pis/20090304/gso_nxb_gti_evt_nxb_merged.pi \\
+    /net/xdata/astro/caldb/data/suzaku/hxd/cpf//ae_hxd_gsohxnome4_20080129.rsp \\
+    plots/20090304/gso_evt_gti_evt_nxb_merged_binGSO.xcm \\
+    ./arfs/ae_hxd_gsohxnome_crab_20070502.arf \\
+    pis/20090304/gso_nxb_gti_evt_nxb_merged_times100.pi \\
+EOF
+exit
+fi
+
+#parameter set
+evtpi=$1
+nxbpi=$2
+response=$3
+outputxcm=$4
+arf=$5
+additional=$6
+
+#xspec nowindow mode
+export PGPLOT_TYPE=""
+
+#create xcm
+cat << EOF > $outputxcm
+data 1 $evtpi
+response 1 $response
+data 2 $nxbpi
+response 2 $response
+data 3 $evtpi
+backgrnd 3 $nxbpi
+response 3 $response
+arf 3 $arf
+
+EOF
+
+if [ _$additional != _ ];
+then
+cat << EOF >> $outputxcm
+data 4 $additional
+response 4 $response
+EOF
+fi
+
+
+cat << EOF >> $outputxcm
+
+setplot energy
+ignore 1-30:**-50. 600.-**
+
+plot ldata
+EOF

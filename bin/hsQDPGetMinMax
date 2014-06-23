@@ -1,0 +1,54 @@
+#!/usr/bin/env ruby
+
+#Takayuki Yuasa 20140513
+
+if(ARGV.length<3)then
+	STDERR.puts "hsQDPGetMinMax (QDP file) (min/max) (column index)"
+	exit
+end
+
+qdpFile=ARGV[0]
+minMax=ARGV[1].downcase
+columnIndex=ARGV[2].to_i
+
+if(minMax!="min" and minMax!="max")then
+	STDERR.puts "Error: the second argument should be either of min or max ('#{minMax}' provided)"
+	exit
+end
+
+data=[]
+open(qdpFile).each(){|line|
+	data << line
+}
+
+data=data[3...(data.length)]
+
+i=0
+min=0
+max=0
+data.each(){|line|
+	array=line.split(" ")
+	if(array[columnIndex]!=nil)then
+		value=array[columnIndex].to_f
+	else
+		STDERR.puts "Error: column index #{columnIndex} returned nil"
+		exit
+	end
+	if(i==0)then
+		min=value
+		max=value
+	end
+	if(value<min)then
+		min=value
+	end
+	if(max<value)then
+		max=value
+	end
+	i=i+1
+}
+
+if(minMax=="min")then
+	puts min
+else
+	puts max
+end

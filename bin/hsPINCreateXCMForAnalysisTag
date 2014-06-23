@@ -1,0 +1,60 @@
+#!/bin/bash
+
+#20090305 Takayuki Yuasa
+#20090512 Takayuki Yuasa automatic cpd insertion
+#20090526 Takayuki Yuasa cpd deleted (xspec no window mode)
+
+if [ _$4 = _ ];
+then
+cat << EOF
+usage:
+hsPINCreateXCMForAnalysisTag (spectrum file) (nxb file) (response file) (output xcm filename) (additional spectrum)
+Example:
+hsPINCreateSpectrumCheckPlot \\
+    pis/20090304/pin_evt_gti_evt_nxb_merged_bin20.pi \\
+    pis/20090304/pin_nxb_gti_evt_nxb_merged_times10.pi \\
+    /net/xdata/astro/caldb/data/suzaku/hxd/cpf//ae_hxd_pinhxnome4_20080129.rsp \\
+    plots/20090304/pin_evt_gti_evt_nxb_merged_bin20.xcm \\
+    pis/20090304/pin_nxb_gti_evt_nxb_merged_times200.pi
+EOF
+exit
+fi
+
+#parameter set
+evtpi=$1
+nxbpi=$2
+response=$3
+outputxcm=$4
+additional=$5
+
+
+#xspec nowindow mode
+export PGPLOT_TYPE=""
+
+#create xcm
+cat << EOF > $outputxcm
+data 1 $evtpi
+response 1 $response
+data 2 $nxbpi
+response 2 $response
+data 3 $evtpi
+backgrnd 3 $nxbpi
+response 3 $response
+EOF
+
+if [ _$additional != _ ];
+then
+cat << EOF >> $outputxcm
+data 4 $additional
+response 4 $response
+EOF
+fi
+
+
+cat << EOF >> $outputxcm
+$CPD
+setplot energy
+ignore 1-30:**-10. 50.-**
+setplot rebin 5,10,3
+plot ldata
+EOF

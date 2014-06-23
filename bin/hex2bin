@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+#20110724 Takayuki Yuasa
+for value in ARGV do
+print value.hex().to_s(2)+"\n"
+
+end

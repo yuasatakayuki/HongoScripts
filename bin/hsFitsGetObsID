@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#20090609 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+echo "hsFitsGetObsID (suzaku fits file)"
+exit
+fi
+
+
+hsFitsGetHeader $1 1 obs_id

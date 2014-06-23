@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+
+#20121225 Takayuki Yuasa
+
+scriptName="hsHTMLExtractURLsFromHTMLFile"
+scriptUsage=<<EOS
+Script Name: #{scriptName}
+
+Description:
+Extracts URLs liked from an input HTML file.
+href attributes of a tags will be extracted.
+Extension filter can be provied.
+Base URL can be provided for converting relative links
+to complete (absolute) URLs.
+
+Usage:
+#{scriptName} (Input HTML File) (Extension filter; optional; '-' for no filter) (Base URL)
+
+Example:
+#{scriptName} index.html pdf http://www.abcdef.com/files/
+EOS
+
+
+if(ARGV.length==0)then
+print scriptUsage
+exit
+end
+
+htmlfile=ARGV[0]
+
+extension=""
+if(ARGV.length==2)then
+	if(ARGV[1]!="-")then
+		extension=ARGV[1]
+	end
+end
+
+baseurl=""
+if(ARGV.length==3)then
+	baseurl=ARGV[2]
+end
+
+
+open(htmlfile).each{|line|
+	line.chop!()
+	(line.scan(/href="(.*?)"/ )).each{|array|
+		 array.each{|e|
+		 	result=""
+			 if(extension!="")then
+			  str=e
+			  if(str.include?(extension))then
+			   result="#{$1}"
+			  end
+			 else
+			  result="#{e}"
+			 end
+			 result.gsub!(" ","")
+			 result.gsub!("\t","")
+			 result.gsub!("\n","")
+			 if(result!="")then
+				 if(!result.include?("http"))then
+				 	result=baseurl+result
+				 end
+				 print "#{result}\n"
+			end
+		 }
+	}
+}

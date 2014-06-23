@@ -1,0 +1,36 @@
+#!/bin/bash
+
+
+pwd=`pwd`
+if [ `basename $pwd` != spectral_analysis ];
+then
+echo "run this script at analysis/gso/spectral_analysis/ folder."
+exit
+fi
+
+read -p "input tag name > " tag
+if [ _$tag = _ ];
+then
+echo "tag name empty...exit"
+exit
+fi
+
+#create gti
+if [ ! -f gtis/$tag/cleaned_evt_nxb_merged.gti ];
+then
+mkdir -p gtis/$tag pis/$tag plots/$tag &> /dev/null
+hsPINMergeGTI "../data/gso_evt.evt+2" "../data/gso_nxb.evt+2" gtis/$tag/cleaned_evt_nxb_merged.gti
+fi
+
+#extract spectra
+hsGSOExtractSpectrumWithGTI ../data/gso_evt.evt ../data/pseudo.evt gtis/${tag}/cleaned_evt_nxb_merged.gti pis/${tag}/gso_evt_gti_evt_nxb_merged.pi
+hsGSOExtractSpectrumWithGTI ../data/gso_nxb.evt ../data/pseudo.evt gtis/${tag}/cleaned_evt_nxb_merged.gti nxbs/${tag}/gso_nxb_gti_evt_nxb_merged.pi
+
+#plot
+hsGSOCreateSpectrumCheckPlot \
+ pis/${tag}/gso_evt_gti_evt_nxb_merged_dtcor_binGSO.pi \
+ nxbs/${tag}/gso_nxb_gti_evt_nxb_merged.pi \
+ nxbs/${tag}/gso_nxb_gti_evt_nxb_merged_times100.pi \
+ `hsGSOFindResponseFile pis/${tag}/gso_evt_gti_evt_nxb_merged_dtcor_binGSO.pi` \
+ plots/${tag}/gso_evt_gti_evt_nxb_merged_binGSO.pdf \
+ `hsGSOFindARF pis/${tag}/gso_evt_gti_evt_nxb_merged_dtcor_binGSO.pi`

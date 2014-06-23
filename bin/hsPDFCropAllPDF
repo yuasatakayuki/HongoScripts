@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#20140407 Takayuki Yuasa
+
+#--
+#programName: hsPDFCropAllPDF
+#author: Takayuki Yuasa
+#summary: Crops pdf files in the current directory using pdfcrop in the TeX Live package. 
+#detail: To increase processing speed, this script executes multiple pdfcrop processes simultaneously.
+#  The maximum number of threads to be executed can be configured via NMaxThreads in the script.
+#  The defail NMaxThreads is 8.
+#required: pdfcrop
+#argument: none
+#/--
+
+NMaxThreads=8
+nThreads=0
+
+for file in `ls *.pdf`; do
+
+pdfcrop $file $file &
+nThreads = `calc $nThreads + 1`
+
+if [ $nThreads = $NMaxThreads ]; then
+echo "Waiting..."
+wait
+nThreads=0
+fi
+
+done
+
+echo "Waiting..."
+wait
+
+echo "Completed."

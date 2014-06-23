@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+
+if(ARGV.length==0)then
+print "give image file names...\n"
+exit
+end
+
+print <<EOS
+<gallery>
+EOS
+
+ARGV.each{|element|
+	print "File:#{element}\n"
+}
+
+print <<EOS
+</gallery>
+EOS

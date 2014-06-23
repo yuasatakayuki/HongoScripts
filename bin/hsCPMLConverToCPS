@@ -1,0 +1,412 @@
+#!/usr/bin/env ruby
+
+#20140212 Takayuki Yuasa
+#20140217 Takayuki Yuasa first release to HXI/SGD teams
+#20140224 Takayuki Yuasa header generation functionality was added
+
+# Section separator
+$sectionSeparator="#=================================================================="
+$subsectionSeparator="#-----------------------------------------------"
+
+# Global variables
+$sectionCounter=0
+
+#  Note that $sectionCounter can be changed on-the-fly by doing e.g.
+#  @@ set sectionCounter 5
+#  in the source file.
+$subsectionCounter=1
+$lineNumber=1
+$stopper=" "
+$processingBlockOfCheckCommands=false
+$generateCheckSheetTable=true
+$resultingCommandSequence=[]
+$outputFileName=""
+
+# Constants
+$satelliteName="ASTRO-H"
+$satelliteNumber="47"
+MaximumLengthOfDCSM=1000
+
+class CPSGenerator
+def stripLeadingComma(line)
+	line=line.strip()
+	while(line[0]==".")do
+		line=line[1...(line.length)].strip()
+	end
+	return line.strip()
+end
+
+def stripLeadingAndTrailingEquals(line)
+	line=line.strip()
+	while(line[0]=="=")do
+		line=line[1...(line.length)].strip()
+	end
+	while(line[-1]=="=")do
+		line=line[0...(line.length-1)].strip()
+	end
+	return line.strip()
+end
+
+def expandUserDefinedVariables(str)
+	$userDefinedVariables.each(){|key,value|
+		str.gsub!("${#{key}}",value)
+	}
+	return str
+end
+
+def constructAndGetHeader()
+	result=""
+	#2013-12-25 10:03:19
+	dateTime=Time.now.strftime("%Y-%m-%d %H:%M:%S")
+	nLines=$resultingCommandSequence.length()
+	if($outputFileName=="")then
+		result="# Warning: MAIN/DCSM header was not automatically generated because 'outputFileName' is not set in CPML."
+	else
+		array=$outputFileName.split(".")
+		basename=array[0...(array.length-1)].join(".")
+		if($outputFileName.downcase.include?("main"))then #main
+			result="#!HEAD: #{basename} #{dateTime} #{nLines} #{$satelliteNumber} #{$satelliteName} MAIN2 //    #"
+		elsif($outputFileName.downcase.include?("dcsm"))then #dcsm
+			# something like
+			# #!HEAD: dcsm-CAMS1-AlignmentTestExtraSteps 2013-12-25 10:07:22 866 47 ASTRO-H DCSM
+			result="#!HEAD: #{basename} #{dateTime} #{nLines} #{$satelliteNumber} #{$satelliteName} DCSM //    #"
+		else
+			result="# Warning: MAIN/DCSM header was not automatically generated because 'outputFileName' does not include 'main-' or 'dcsm-'"
+		end
+	end
+	return result+"\n"
+end
+
+def getResultingCommandSequence()
+	return $resultingCommandSequence.join("\n").gsub!(/\n\n/,"\n")
+end
+def output()
+	if($outputFileName=="")then
+		puts constructAndGetHeader()
+		puts getResultingCommandSequence()
+	else
+		STDERR.puts "Saving to #{$outputFileName}"
+		file=open($outputFileName,"w")
+		file.write(constructAndGetHeader())
+		file.write(getResultingCommandSequence())
+		file.close()
+		if($outputFileName.downcase.include?("dcsm"))then
+			nLines=$resultingCommandSequence.length
+			if(nLines>MaximumLengthOfDCSM)then
+				STDERR.puts "Warning: The generated DCSM is longer than 1000 lines (#{nLines} lines) which is the limit for one DCSM file."
+			end
+		end
+	end
+end
+
+def dump(str)
+	str.each_line(){|line|
+		line = expandUserDefinedVariables(line)
+		$resultingCommandSequence << "#{"%04d" % $lineNumber}  #{$stopper} #{line}"
+		$lineNumber=$lineNumber+1
+	}
+end
+
+def dumpWithComma(str)
+	str.each_line(){|line|
+		line = expandUserDefinedVariables(line)
+		$resultingCommandSequence << "#{"%04d" % $lineNumber}  . #{line}"
+		$lineNumber=$lineNumber+1
+	}
+end
+
+def processSectionHeader(line)
+	$sectionCounter=$sectionCounter+1
+	$subsectionCounter=1
+	sectionNumber = "#{$sectionCounter}."
+	title=stripLeadingAndTrailingEquals(line)
+	dump $sectionSeparator
+	dumpWithComma "# #{sectionNumber} #{title}"
+	dump $sectionSeparator
+end
+
+def processSubsectionHeader(line)
+	sectionNumber = "#{$sectionCounter}.#{$subsectionCounter}."
+	title=stripLeadingAndTrailingEquals(line)
+	dump $subsectionSeparator
+	dumpWithComma "# #{sectionNumber} #{title}"
+	dump $subsectionSeparator
+	$subsectionCounter=$subsectionCounter+1
+end
+
+def processComment(line)
+	if(line[0..1]!="# ")then
+		line=line[1...(line.length)]
+		dump "# #{line}"
+	else
+		dump line
+	end
+end
+
+$blockOfCheckCommands=[]
+$blockOfCheckCommandsStoppers=[]
+
+def dumpTelemetryCheckSheetTable()
+	if($generateCheckSheetTable)then
+		dump <<EOS
+#
+# -------------------------+-----------------+-----------+---------
+# #{"%25s"%"Attribute".ljust(25)} #{"%17s"%"Predict".center(17)} #{"%11s"%"Data".center(11)}  Result
+# -------------------------+-----------------+-----------+---------
+EOS
+	
+		$blockOfCheckCommands.each(){|line|
+		if(!line.include?("CHECK "))then
+			#this might be SYSTEM or other non-CHECK commands,
+			#and then, just continue the loop.
+			next
+		end
+		array=line.split(" ")
+		attributePath=array[1]
+		attributeName=attributePath.split(".")[-1]
+
+		expectedValue="???"
+		dataInputForm="___________"
+		if(line.include?("="))then
+			expectedValue=line.split("=")[-1]
+			dataInputForm="___________"
+		elsif(line.include?("updatewait"))then
+			expectedValue="updated"
+			dataInputForm="____->_____"
+		else
+			if(array[2]!=nil)then
+				expectedValue=array[2...(array.length)].join(" ")
+			else
+				putsError "No expected value provided to a CHECK command."
+			end
+		end
+		
+
+		dump <<EOS % [attributeName, expectedValue.center(17), dataInputForm]
+# %-25s %17s %s Pass/Fail
+EOS
+	}	
+		dump "#"
+	else
+		#if $generateCheckSheetTable is false, then
+		#just return.
+		return
+	end
+end
+
+def dumpTelemetryCheckOverallResult()
+	if(!$generateCheckSheetTable)then
+		return
+	end
+	dump <<EOS
+#                                   Overall check result: Pass/Fail
+#
+EOS
+end
+
+def dumpBlockOfCheckCommands()
+	stopperRegistered=$stopper
+	$stopper=" "
+	if($blockOfCheckCommands.length==0)then
+		return
+	end
+	
+	#dumps check table
+	dumpTelemetryCheckSheetTable()
+
+	#dumps check commands themselves
+	str=""
+	$blockOfCheckCommands.each_with_index(){|e,i|
+		$stopper=$blockOfCheckCommandsStoppers[i]
+		dump <<EOS
+#{$blockOfCheckCommands[i]}
+EOS
+	}
+
+	#dump overall check
+	dumpTelemetryCheckOverallResult()
+
+	$blockOfCheckCommands=[]
+	$processingBlockOfCheckCommands=false
+	$stopper=stopperRegistered
+end
+
+def processCommandExecution(line)
+	if(line.index("SYSTEM ")==0)then
+		#if SYSTEM command appears inside a block of CHECK commands,
+		#it should be dumped together with those CHECK commands.
+		if($processingBlockOfCheckCommands)then
+			$blockOfCheckCommands << line
+		else
+			dump line
+		end
+	elsif(line.index("CHECK ")==0)then
+		#if check command, automatically generate a table
+		$processingBlockOfCheckCommands=true
+		$blockOfCheckCommands << line
+		$blockOfCheckCommandsStoppers << $stopper
+	else
+		#this means an end of a block of check commands,
+		#and therefore, dumps check table and check
+		#commands themselves.
+		if($processingBlockOfCheckCommands)then
+			dumpBlockOfCheckCommands()
+		end
+		dump line
+	end
+end
+
+def processMetaCommand(line)
+	line.gsub!("@@","").strip!()
+	array=line.split(" ")
+	if(array.length==0)then
+		return
+	end
+	command=array[0]
+
+	#puts "MetaCommand = #{command}"
+
+	if(command=="set")then
+		processMetaCommandSet(array[1...(array.length)])
+	elsif(command=="import" or command=="include")then
+		if(array[1]==nil)then
+			putsError "@@ import command requires file name."
+		end
+		fileName=array[1].gsub('"',"")
+		processMetaCommandImport(fileName)
+	elsif(command=="require")then
+		if(array[1]==nil)then
+			putsError "@@ require command requires variable name."
+		end
+		variableName=array[1].to_s
+		#check if a necessary user-defined command is already defined.
+		if($userDefinedVariables[variableName]==nil)then
+			putsError "User-defined variable #{variableName} is not defined, and @@ require command failed."
+		end
+	end
+
+end
+
+def processLine(lineString)
+	line=lineString.strip()
+	
+	if(line.include?("//"))then
+		dumpBlockOfCheckCommands()
+		return
+	elsif(line.include?("@@"))then
+		dumpBlockOfCheckCommands()
+		processMetaCommand(line)
+	elsif(line.include?("==="))then
+		dumpBlockOfCheckCommands()
+		processSubsectionHeader(line)
+	elsif(line.include?("=="))then
+		dumpBlockOfCheckCommands()
+		processSectionHeader(line)
+	elsif(line[0]=="#")then
+		dumpBlockOfCheckCommands()
+		processComment(line)
+	elsif(line.gsub(" ","")[1]=="#")then
+		dumpBlockOfCheckCommands()
+		$stopper="."
+		line=stripLeadingComma(line)
+		processComment(line)
+		$stopper=" "
+	elsif(line[0]==".")then
+		$stopper="."
+		line=stripLeadingComma(line)
+		processCommandExecution(line)
+		$stopper=" "
+	elsif(line.length!=0)then
+		processCommandExecution(line)
+	else #if line==""
+		dumpBlockOfCheckCommands()
+		processComment("#")
+	end
+
+end
+
+def processMetaCommandImport(fileName)
+	if(!File.exist?(fileName))then
+		putsError "@@ import cannot find a file named #{fileName}."
+	end
+	open(fileName).each(){|line|
+		processLine(line)
+	}
+	dumpBlockOfCheckCommands()
+end
+
+$userDefinedVariables={}
+
+def processMetaCommandSet(array)
+	if(array.length<2)then
+		putsError "@@ set requires variable name and value."
+	end
+	variableName=array[0]
+	value=expandUserDefinedVariables(array[1].to_s)
+
+	#puts "processMetaCommandSet #{array[0]} #{array[1]}"
+
+	if(variableName=="sectionCounter")then
+		$sectionCounter=value.to_i
+	elsif(variableName=="generateCheckSheetTable")then
+		if(value.to_s=="true" or value.to_s=="yes")then
+			#STDERR.puts "CheckSheet generation is turned on."
+			$generateCheckSheetTable=true
+		elsif(value.to_s=="false" or value.to_s=="no")then
+			#STDERR.puts "CheckSheet generation is turned off."
+			$generateCheckSheetTable=false
+		else
+			putsError "generateCheckSheetTable should be either of true/false (or yes/no). #{value} was provided."
+		end
+	elsif(variableName=="lineNumber")then
+		$lineNumber=value.to_i
+	elsif(variableName=="outputFileName")then
+		$outputFileName=value
+	else
+		#user-defined variable
+		$userDefinedVariables[variableName]=value.to_s
+		#puts "UserDefinedValue added: #{variableName} = #{value.to_s}"
+	end
+
+end
+
+def processFile(fileName)
+	open(fileName).each(){|line|
+		processLine(line)
+	}
+	dumpBlockOfCheckCommands()
+	processLine("#")
+	processLine("# End of file")
+end
+
+def putsError(str)
+	#todo: implement filename and line number of error
+	STDERR.puts "Error: #{str}"
+	exit
+end
+end #end of class definition
+
+# Sample of the header
+# MAIN
+# #!HEAD: main2-CAMS1_EICMIC 2013-12-25 10:03:19 302 47 ASTRO-H MAIN2 //    #
+# DCSM (subroutine; stands for Discrete Command and Serial Magnitude command)
+# #!HEAD: dcsm-CAMS1-AlignmentTestExtraSteps 2013-12-25 10:07:22 866 47 ASTRO-H DCSM
+
+# Sample of check-sheet table
+# -------------------------+-----------------+-----------+---------
+# Attribute                 Predict           Data        Result
+# -------------------------+-----------------+-----------+---------
+# CMD_RCV_COUNT              +1               ____->_____ Pass/Fail
+# IS_SAMPLING                Sampling         ____________Pass/Fail
+
+#---------------------------------------------
+# Main routine
+#---------------------------------------------
+if (ARGV.length==0) then
+	STDERR.puts "provide input file name"
+	exit
+end
+inputFile=ARGV[0]
+generator=CPSGenerator.new
+generator.processFile(inputFile)
+generator.output()

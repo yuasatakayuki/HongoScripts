@@ -1,0 +1,30 @@
+#!/bin/bash
+
+#20090306 Takayuki Yuasa
+
+if [ _$3 = _ ];
+then
+echo "hsFitsColumnGetMaximumValue FILE EXTENSION COLUMN"
+exit
+fi
+
+tmp=`hsHashRandom`
+
+hsFitsDumpColumns ${1} ${2} $3 > $tmp
+
+perl << EOF
+open(FILE,"$tmp");
+@file=<FILE>;close FILE;
+
+\$max=\$file[0];
+
+foreach \$line (@file){
+ if(\$max<\$line){
+  \$max=\$line;
+ }
+}
+
+print \$max;
+EOF
+
+rm $tmp

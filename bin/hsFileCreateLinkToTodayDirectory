@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#20080627 Takayuki Yuasa
+
+if [ _$1 = _ ];
+then
+dir=.
+else
+dir=$1
+fi
+
+cd $dir &> /dev/null
+rm today &> /dev/null
+ln -s `date +'%Y%m%d'` today
+cd - &> /dev/null
+
