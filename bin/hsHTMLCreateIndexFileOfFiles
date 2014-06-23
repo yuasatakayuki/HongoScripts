@@ -82,8 +82,7 @@ end
 puts <<EOS
 </table>
 <p class="small">
-Note: This index was generated on #{creationDate} by
-<a href="https://github.com/yuasatakayuki/WorkScripts/blob/master/bin/hsHTMLCreateIndexFileOfFiles">hsHTMLCreateIndexFileOfFiles</a> contained in <a href="https://github.com/yuasatakayuki/WorkScripts">WorkScripts</a>.
+Note: This index was generated on #{creationDate} by hsHTMLCreateIndexFileOfFiles contained in <a href="https://github.com/yuasatakayuki/HongoScripts">HongoScripts</a>.
 </p>
 </body>
 </html>
