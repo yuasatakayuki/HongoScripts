@@ -1,0 +1,53 @@
+= HongoScripts version 2 =
+
+
+
+== Required programs ==
+To fully use the capability of HongoScripts, install the following programs.
+
+*cmake
+*ruby
+*zsh
+*wget
+*heasoft
+*root
+*mactex
+*pdftk
+*pdfcrop
+
+== Install on Mac ==
+Homebrew allows you to easily install HongoScripts.
+Do the following in the Terminal.app.
+
+1. Install Homebrew. Skip if already installed.
+<pre>
+ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go/install)"
+</pre>
+
+2. Tap yuasatakayuki/hxisgd and install HongoScripts.
+<pre>
+brew tap yuasatakayuki/hxisgd
+brew install hongoscripts
+</pre>
+
+3. Test if successfully installed.
+<pre>
+hsFullpath .
+(this will show the full path of your current directory)
+(if it does not work, installation seems failed. check the output of the brew command)
+</pre>
+
+
+== To use Suzaku Analaysis Scripts ==
+Before using Suzaku Analysis Scripts such as hsSuzakuGoHXDPointSource and hsSuzakuGoXISPointSource, please set the environment variable RUBYLIB properly to include the directory where HongoScripts/ruby is installed.
+When installed using Homebrew, the path should be set as follows: 
+<pre>
+export RUBYLIB=/usr/local/lib/ruby:$RUBYLIB
+</pre>
+in your shell initialization file ($HOME/.zshrc or $HOME/.bashrc). 
+
+When installaed as a folder (i.e. without make install), set something like:
+<pre>
+export PATH=path_to/HongoScripts/bin:$PATH
+export RUBYLIB=path_to/HongoScripts/ruby:$RUBYLIB
+</pre>
