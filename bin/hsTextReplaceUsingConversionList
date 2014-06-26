@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20140626
+
+if(ARGV.length<2)then
+	puts <<EOS
+Provide:
+	1: target text file of which contents will be replaced
+	2: a delimitter-separated-value (DSV) file containing a list of pairs of find/replace strings
+	3: delimitter (optional. set if a delimitter other than white space is used in the list file)
+
+Example:
+	hsTextReplaceUsingConversionList module.vhdl conversionList.text ,
+	
+conversionList.text should contain something like:
+---------------------------------------------
+spw_codec,spwCodec
+tx_fifo,TransmitFIFO
+...
+---------------------------------------------
+EOS
+	exit
+end
+
+inputFile=ARGV[0]
+listFile=ARGV[1]
+
+if(!File.exist?(inputFile))then
+	STDERR.puts "Error: input file #{inputFile} not found"
+	exit
+end
+
+if(!File.exist?(listFile))then
+	STDERR.puts "Error: input file #{listFile} not found"
+	exit
+end
+
+delimitter=" "
+if(ARGV[2]!=nil)then
+	delimitter=ARGV[2]
+end
+
+#load list file
+strings=[]
+open(listFile).each(){|line|
+	array=line.split(delimitter)
+	if(2<=array.length)then
+		strings << array
+	end
+}
+
+if(strings.length==0)then
+	STDERR.puts "Error: list file was not properly loaded (there is zero pair of find/replace strings). Delimitter may be wrong"
+	exit
+end
+
+#do replace
+open(inputFile).each(){|line|
+	strings.each(){|e|
+		line=line.gsub(e[0],e[1])
+	}
+	puts line
+}
+
