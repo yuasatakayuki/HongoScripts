@@ -43,7 +43,7 @@ end
 #load list file
 strings=[]
 open(listFile).each(){|line|
-	array=line.split(delimitter)
+	array=line.strip.split(delimitter)
 	if(2<=array.length)then
 		strings << array
 	end
@@ -53,6 +53,11 @@ if(strings.length==0)then
 	STDERR.puts "Error: list file was not properly loaded (there is zero pair of find/replace strings). Delimitter may be wrong"
 	exit
 end
+
+#sort replace strings
+strings.sort!(){|a,b|
+	b[0].length <=> a[0].length
+}
 
 #do replace
 open(inputFile).each(){|line|
