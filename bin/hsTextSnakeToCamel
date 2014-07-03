@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20140703
+
+if(ARGV.length<1)then
+	puts "Provide input text file that contains a list of names in snake case"
+	exit
+end
+
+if(!File.exist?(ARGV[0]))then
+	STDERR.puts "Error: file not found"
+	exit
+end
+
+def convertSnakeToCamel(str)
+	result=""
+	str.split("_").each_with_index(){|e,i|
+		if(i==0)then
+			result<<e.downcase
+		else
+			result<<e.capitalize
+		end
+	}
+	return result
+end
+
+open(ARGV[0]).each(){|line|
+	puts convertSnakeToCamel(line)
+}
