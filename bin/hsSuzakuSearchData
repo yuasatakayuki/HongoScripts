@@ -60,6 +60,11 @@ def getSearchURLForPI(piName)
 	return "http://darts.isas.jaxa.jp/astro/suzaku/suzakumaster/suzakuMasterSearchCondition.do?lookupDispatchKey=SEARCH&max=100&sort=OBSID&sortSeq=%2B&line=short&searchMenu=CSV&patternChecked=on&name=&obsid=&adstract=&pi=#{escape(piName.join(" "))}&co_pi=&title=&proc_ver=&prnb="
 end
 
+# Pattern match - observation name
+def getSearchURLForObservationName(observationName)
+	return "http://darts.isas.jaxa.jp/astro/suzaku/suzakumaster/suzakuMasterSearchCondition.do?lookupDispatchKey=SEARCH&max=100&sort=OBSID&sortSeq=%2B&line=short&searchMenu=CSV&patternChecked=on&name=#{escape(observationName.join(" "))}&obsid=&adstract=&pi=&co_pi=&title=&proc_ver=&prnb="
+end
+
 # get url depending on search mode
 def getURL(mode, keywords)
 	if(mode=="name")then
@@ -83,6 +88,9 @@ def getURL(mode, keywords)
 	if(mode=="pi" or mode=="piName")then
 		return getSearchURLForPI(keywords)
 	end
+	if(mode=="obsname" or mode=="observationName")then
+		return getSearchURLForObservationName(keywords)
+	end
 end
 
 #############################################
@@ -92,12 +100,14 @@ end
 if(ARGV.length<2)then
 puts <<EOS
 usage: hsSuzakuSearchData (mode) (search keywods)
-	mode = name/j2000/radec/gal/galactic/date/publicDate/abstract/piName/pi
+	mode = name/j2000/radec/gal/galactic/date/publicDate/abstract/piName/pi/obsname/observationName
 	search keywords = array of keywords
 	e.g.
 		(1) hsSuzakuSearchData date 2009 03 28 2010 04 01
 		(2) hsSuzakuSearchData name v1223 sgr
 		(3) hsSuzakuSearchData pi yuasa
+		(4) hsSuzakuSearchData gal 4.957836	 -14.355007
+		(5) hsSuzakuSearchData obsname IGR
 EOS
 exit
 end
