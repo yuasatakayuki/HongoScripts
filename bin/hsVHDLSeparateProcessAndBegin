@@ -15,7 +15,7 @@ if(!File.exist?(file))then
 end
 
 open(file).each(){|line|
-	lineLower=line.downcase
+	lineLower=line.scrub('?').downcase
 	if(lineLower.include?("process") and lineLower.include?("(") and lineLower.include?("begin"))then
 		puts line.gsub("begin","").gsub("BEGIN","").gsub("Begin","")
 		lineLower.match(/^\s+/)

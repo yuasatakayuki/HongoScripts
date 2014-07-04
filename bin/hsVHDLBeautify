@@ -19,8 +19,11 @@ cat << EOF > $temporaryFile
 (setq vhdl-basic-offset 2)
 EOF
 
+backupFile="${file}_beforeBeautify_`hsDateYYYYMMDD_HHMM`"
+
 temporaryVHDLFile=`hsTemporaryFile`.vhdl
-nkf --unix $file > $temporaryVHDLFile
+nkf -w $file > $temporaryVHDLFile
+cp $file $backupFile
 hsVHDLSeparateProcessAndBegin $temporaryVHDLFile > $file
 emacs -batch -l $temporaryFile $file  -f vhdl-beautify-buffer &> /dev/null
 
