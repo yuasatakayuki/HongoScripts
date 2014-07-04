@@ -22,7 +22,7 @@ EOF
 backupFile="${file}_beforeBeautify_`hsDateYYYYMMDD_HHMM`"
 
 temporaryVHDLFile=`hsTemporaryFile`.vhdl
-nkf -w $file > $temporaryVHDLFile
+nkf -w -Lu $file > $temporaryVHDLFile
 cp $file $backupFile
 hsVHDLSeparateProcessAndBegin $temporaryVHDLFile > $file
 emacs -batch -l $temporaryFile $file  -f vhdl-beautify-buffer &> /dev/null
