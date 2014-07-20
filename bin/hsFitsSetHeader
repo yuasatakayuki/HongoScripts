@@ -14,4 +14,4 @@ extension=$2
 keyword=$3
 value=$4
 
-fparkey $value ${infile}+${extension} $keyword
+fparkey $value ${infile}+${extension} $keyword add=yes
