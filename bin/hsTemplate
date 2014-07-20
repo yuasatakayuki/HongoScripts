@@ -21,6 +21,93 @@ class TemplateText
 end
 
 #---------------------------------------------
+# cmake
+#---------------------------------------------
+class CmakeTemplate < TemplateText
+	def initialize()
+		@languageName="cmake"
+	end
+	def to_s()
+		puts <<EOS
+#=============================================
+# Definition of project
+#=============================================
+project( --ProjectName-- CXX)
+cmake_minimum_required(VERSION 2.8)
+set(MAIN_TARGET --MainTarget-- )
+
+set(CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++ -g")
+set(CMAKE_CXX_COMPILER "clang++")
+
+#=============================================
+# Initial definition of cmake variables
+#=============================================
+set(CMAKE_INSTALL_PREFIX $ENV{HOME} CACHE PATH "install prefix")
+set(CMAKE_BUILD_TYPE Release CACHE STRING "build type")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -W -Wall" CACHE STRING "CXX_FLAGS for debug")
+set(CMAKE_C_FLAGS_DEBUG "-g -W -Wall" CACHE STRING "C_FLAGS for debug")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -W -Wall" CACHE STRING "CXX_FLAGS for release")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -W -Wall" CACHE STRING "C_FLAGS for release")
+
+
+#=============================================
+# Include path
+#=============================================
+include_directories(
+  include
+)
+
+#=============================================
+# Link directories
+#=============================================
+link_directories(
+	lib
+)
+
+#=============================================
+# Optional include path and link directories
+#=============================================
+if(ADDITIONAL_INCLUDE_PATH)
+	message(STATUS "ADDITIONAL_INCLUDE_PATH = ${ADDITIONAL_INCLUDE_PATH}")
+	include_directories(
+		${ADDITIONAL_INCLUDE_PATH}
+	)
+endif(ADDITIONAL_INCLUDE_PATH)
+if(ADDITIONAL_LINK_DIRECTORY)
+	message(STATUS "ADDITIONAL_LINK_DIRECTORY = ${ADDITIONAL_LINK_DIRECTORY}")
+	link_directories(
+		${ADDITIONAL_LINK_DIRECTORY}
+	)
+endif(ADDITIONAL_LINK_DIRECTORY)
+
+
+#=============================================
+# Executable definitions
+#=============================================
+#---------------------------------------------
+# Executable source
+#---------------------------------------------
+add_executable(${MAIN_TARGET}
+  --ExecutableSource.cc--
+)
+
+#---------------------------------------------
+# Linked libraries
+#---------------------------------------------
+target_link_libraries(${MAIN_TARGET}
+  cfitsio_3.35 xerces-c
+)
+
+#=============================================
+# Installs
+#=============================================
+install_targets(/bin ${MAIN_TARGET})
+EOS
+	end
+end
+
+
+#---------------------------------------------
 # Ruby
 #---------------------------------------------
 class RubyTemplate < TemplateText
@@ -171,6 +258,8 @@ end
 #---------------------------------------------
 
 templates = {}
+cmakeTemplate=CmakeTemplate.new
+templates[cmakeTemplate.getLanguageName()]=cmakeTemplate
 rubyTemplate=RubyTemplate.new
 templates[rubyTemplate.getLanguageName()]=rubyTemplate
 cppTemplate=CppTemplate.new

@@ -88,9 +88,8 @@ fi
 
 #file list
 filelist=""
-for file in `ls xis0.rmf xis2.rmf xis3.rmf 2> /dev/null`;
-do
-filelist=${filelist},$file
+for file in `ls xis0.rmf xis2.rmf xis3.rmf 2> /dev/null`; do
+	filelist=${filelist},$file
 done
 filelist=`echo $filelist | sed -e "s/^,//g"`
 
