@@ -1,0 +1,92 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20140721
+
+if(ARGV.length<1)then
+	puts <<EOS
+Provide:
+	1: VHDL file of which signals and entity will be extracted
+	2: (optional) ---type or t for dumping signal type as well
+EOS
+	exit
+end
+
+inputFile=ARGV[0]
+if(!File.exist?(inputFile))then
+	STDERR.puts "Error: file not found"
+	exit
+end
+
+dumpSignalTypeAsWell=false
+if(ARGV[1]!=nil)then
+	if(ARGV[1]=="-t" or ARGV[1]=="--type")then
+		dumpSignalTypeAsWell=true
+	else
+		STDERR.puts "Error: invalid option #{ARGV[1]}"
+		exit
+	end
+end
+
+text=File.read(inputFile)
+
+entityPart=""
+text.match(/entity (.+?) is.*?end \1/m)
+if(Regexp.last_match!=nil)then
+	entityPart=Regexp.last_match.to_s
+end
+
+architecturePart=""
+signalDefinitionPart=""
+text.match(/architecture (.+?) of (.+?) is(.*?)begin.*?\1/m)
+if(Regexp.last_match!=nil)then
+	architecturePart=Regexp.last_match
+	signalDefinitionPart=Regexp.last_match[3]
+end
+
+#containers
+signals=[]
+
+#extract signal/constant
+signalDefinitionPart.each_line(){|line|
+	line.strip!
+	line.match(/signal (.+?)\s*:\s*(.*?)\s*[:;]/)
+	if(Regexp.last_match!=nil and Regexp.last_match.length>2)then
+		signalName=Regexp.last_match[1].to_s
+		signalType=Regexp.last_match[2].to_s
+		signals << [signalName,signalType]
+	end
+
+	line.match(/constant (.+?)\s*:\s*(.*?)\s*[:;]/)
+	if(Regexp.last_match!=nil and Regexp.last_match.length>2)then
+		signalName=Regexp.last_match[1].to_s
+		signalType=Regexp.last_match[2].to_s
+		signals << [signalName,signalType]
+	end	
+}
+
+#extract entity
+insidePortDefinition=false
+entityPart.each_line(){|line|
+	line.strip!
+	if(!insidePortDefinition and line.downcase.include?("port"))then
+		insidePortDefinition=true
+	end
+	if(insidePortDefinition)then
+		line.match(/(.+?)\s*:\s*(.*?)\s+(.+?)\s*;/)
+		if(Regexp.last_match!=nil and Regexp.last_match.length>2)then
+			signalName=Regexp.last_match[1].to_s
+			signalType=Regexp.last_match[3].to_s
+			signals << [signalName,signalType]
+		end
+	end
+}
+
+signals.each(){|e|
+	e[0].strip!
+	e[1].strip!
+	if(dumpSignalTypeAsWell)then
+		puts e[0]+" : "+e[1]
+	else
+		puts e[0]
+	end
+}
