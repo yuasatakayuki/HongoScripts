@@ -6,7 +6,7 @@ if [ _$2 = _ ]; then
 cat << EOF
 give the following arguments:
   1: a relative path to suzaku data folder (e.g. ../../data/408018020).
-  2: output file name (e.g pinEarthOccultation.evt)
+  2: output file name (e.g pinPseudo.evt)
 EOF
 exit
 fi
@@ -36,7 +36,7 @@ detType=2
 eventFileList=`hsHashRandom`
 
 echo "Creatint a unfiltered event file list..."
-ls $eventUFDir/ae*hxd*wel_uf* > $eventFileList
+ls $eventUFDir/ae*hxd*wel_uf*evt* > $eventFileList
 cat $eventFileList
 
 rm -f $outputFile
