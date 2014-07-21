@@ -16,7 +16,7 @@ class GSOAnalysis < HXDAnalysis
 		end
 		commands=<<EOS
 #merge cleanede event gti and nxb gti
-pin_merge_gtis.sh \\
+hsPINMergeGTI \\
  "../data/#{evtfile}+2" \\
  "../data/#{nxbfile}+2" \\
  gtis/#{@tagname}/#{GSOFilenames::GTIOfCleanedEventMergedWithThatOfNXB}
@@ -27,7 +27,7 @@ EOS
 			commands=commands+<<EOS
 #create new GTI by merging cleaned event gti and specified gti
 gtifile=gtis/#{@tagname}/#{GSOFilenames::MergedGTICreatedFromSpecifiedAndCleanedOnes}
-pin_merge_gtis.sh \\
+hsPINMergeGTI \\
  gtis/#{@tagname}/#{GSOFilenames::GTIOfCleanedEventMergedWithThatOfNXB} \\
  #{@analysisinformation.gtifile} \\
  $gtifile
@@ -44,7 +44,7 @@ EOS
 	def extractSpectrum(eventfile,pseudofile,outputspectrum)
 		commands=<<EOS
 #extract spectra
-gso_extract_spectrum_with_gti.sh \\
+hsGSOExtractSpectrumWithGTI \\
  #{eventfile} \\
  #{pseudofile} \\
  $gtifile \\
@@ -70,7 +70,7 @@ EOS
 if [ ! -f ../data/#{GSOFilenames::CleanedEventFileBarycentricCorrected} ];
 then
 pushd ../ &> /dev/null
-gso_barycentric_correction_auto.sh #{ra} #{dec}
+hsGSOBarycentricCorrectionAuto #{ra} #{dec}
 popd &> /dev/null
 fi
 	
@@ -93,7 +93,7 @@ checkifexists=`ls responses/*rsp 2> /dev/null`
 if [ _$checkifexists = _ ];
 then
 #not copied yet
-responsefile_fullpath=`gso_find_responsefile_auto.sh pis/#{@tagname}/#{GSOFilenames::SpectrumOfCleanedEvents}`
+responsefile_fullpath=`hsGSOFindResponseFile pis/#{@tagname}/#{GSOFilenames::SpectrumOfCleanedEvents}`
 responsefile=responses/`basename $responsefile_fullpath`
 cp $responsefile_fullpath $responsefile
 else
@@ -107,7 +107,7 @@ EOS
 		if(@analysisinformation.targetRA!=nil and @analysisinformation.targetDec!=nil)then
 			commands=<<EOS
 #create point source arf
-gso_create_auxiliary_response_file_for_pointsource.sh \\
+hsGSOCreateARFForPointsource \\
 pis/#{@tagname}/#{GSOFilenames::SpectrumOfCleanedEvents} \\
 `ls ../auxil/ae*.att` \\
 @analysisinformation.targetRA \\
@@ -120,7 +120,7 @@ EOS
 		else
 			commands=<<EOS
 #use default arf when no additional arf is specified.
-arf=arfs/`gso_get_latest_arf.sh pis/#{@tagname}/#{GSOFilenames::SpectrumOfDeadtimeCorrectedCleanedEvents}`
+arf=arfs/`hsGSOGetLatestARF pis/#{@tagname}/#{GSOFilenames::SpectrumOfDeadtimeCorrectedCleanedEvents}`
 
 EOS
 		end
@@ -129,7 +129,7 @@ EOS
 	def createSpectraCheckPlot()
 		commands=""
 		commands=commands+<<EOS
-gso_create_spectra_check_plot.sh \\
+hsGSOCreateSpectrumCheckPlot \\
  pis/#{@tagname}/#{GSOFilenames::SpectrumOfDeadtimeCorrectedCleanedEvents} \\
  nxbs/#{@tagname}/#{GSOFilenames::SpectrumOfDeadtimeCorrectedNXB} \\
  nxbs/#{@tagname}/#{GSOFilenames::SpectrumOf1PercentOfNXB} \\
@@ -144,7 +144,7 @@ EOS
 		commands=<<EOS
 #create an XCM file so that users can start
 #spectral fitting soon after the spectral extraction
-gso_create_xcm_for_spectral_fitting.sh \\
+hsGSOCreateXCMForSpectralFitting \\
  pis/#{@tagname}/#{GSOFilenames::SpectrumOfDeadtimeCorrectedCleanedEvents} \\
  nxbs/#{@tagname}/#{GSOFilenames::SpectrumOfDeadtimeCorrectedNXB} \\
  $responsefile \\
@@ -207,7 +207,7 @@ EOS
 		commands=<<EOS
 #extract lightcurve files
 bintime=#{@analysisinformation.bintime}
-gso_extract_lightcurve_with_gti.sh \\
+hsGSOExtractLightcurveWithGTI \\
  ../data/#{GSOFilenames::CleanedEventFile} \\
  ../data/#{GSOFilenames::NXBFile} \\
  ../data/#{GSOFilenames::PseudoEventFile} \\
@@ -222,7 +222,7 @@ EOS
 	def correctDeadtimeOfLightcurves()
 		commands=<<EOS
 #correct dead time
-gso_lightcurve_correct_deadtime_and_nxb.sh \\
+hsGSOCorrectLightcurveWithDeadtimeAndNXB \\
  lcfiles/#{@tagname}/gso_evt_bin${bintime}.lc \\
  lcfiles/#{@tagname}/gso_nxb_bin${bintime}.lc \\
  lcfiles/#{@tagname}/gso_pse_bin${bintime}.lc \\

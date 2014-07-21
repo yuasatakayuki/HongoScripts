@@ -15,7 +15,7 @@ class PINAnalysis < HXDAnalysis
 		end
 		commands=<<EOS
 #merge cleanede event gti and nxb gti
-pin_merge_gtis.sh \\
+hsPINMergeGTI \\
  "../data/#{evtfile}+2" \\
  "../data/#{nxbfile}+2" \\
  gtis/#{@tagname}/#{PINFilenames::GTIOfCleanedEventMergedWithThatOfNXB}
@@ -26,7 +26,7 @@ EOS
 			commands=commands+<<EOS
 #create new GTI by merging cleaned event gti and specified gti
 gtifile=gtis/#{@tagname}/#{PINFilenames::MergedGTICreatedFromSpecifiedAndCleanedOnes}
-pin_merge_gtis.sh \\
+hsPINMergeGTI \\
  gtis/#{@tagname}/#{PINFilenames::GTIOfCleanedEventMergedWithThatOfNXB} \\
  #{@analysisinformation.gtifile} \\
  $gtifile
@@ -43,7 +43,7 @@ EOS
 	def extractSpectrum(eventfile,pseudofile,outputspectrum)
 		commands=<<EOS
 #extract spectra
-pin_extract_spectrum_with_gti.sh \\
+hsPINExtractSpectrumWithGTI \\
  #{eventfile} \\
  #{pseudofile} \\
  $gtifile \\
@@ -69,7 +69,7 @@ EOS
 if [ ! -f ../data/#{PINFilenames::CleanedEventFileBarycentricCorrected} ];
 then
 pushd ../ &> /dev/null
-pin_barycentric_correction_auto.sh #{ra} #{dec}
+hsPINBarycentriCorrectionAuto #{ra} #{dec}
 popd &> /dev/null
 fi
 	
@@ -88,7 +88,7 @@ EOS
 		commands=<<EOS
 #fake cxb spectrum using Boldt 1987
 #see http://heasarc.gsfc.nasa.gov/docs/suzaku/analysis/pin_cxb.html
-pin_fake_cxb_auto.sh \\
+hsPINFakeCXBAuto \\
  ../data/#{PINFilenames::CleanedEventFile} \\
  cxbs/#{@tagname}/#{PINFilenames::SpectrumOfCXB}
 
@@ -103,7 +103,7 @@ checkifexists=`ls responses/*rsp 2> /dev/null`
 if [ _$checkifexists = _ ];
 then
 #not copied yet
-responsefile_fullpath=`pin_find_responsefile_auto.sh pis/#{@tagname}/#{PINFilenames::SpectrumOfCleanedEvents}`
+responsefile_fullpath=`hsPINFindResponseFileAuto pis/#{@tagname}/#{PINFilenames::SpectrumOfCleanedEvents}`
 responsefile=responses/`basename $responsefile_fullpath`
 cp $responsefile_fullpath $responsefile
 else
@@ -117,7 +117,7 @@ EOS
 		if(@analysisinformation.targetRA!=nil and @analysisinformation.targetDec!=nil)then
 			commands=<<EOS
 #create point source arf
-pin_create_auxiliary_response_file_for_pointsource.sh \\
+hsPINCreateARFForPointSource \\
 pis/#{@tagname}/#{PINFilenames::SpectrumOfCleanedEvents} \\
 `ls ../auxil/ae*.att` \\
 @analysisinformation.targetRA \\
@@ -139,7 +139,7 @@ EOS
 	def createSpectraCheckPlot()
 		commands=""
 		commands=commands+<<EOS
-pin_create_spectra_check_plot.sh \\
+hsPINCreateSpectrumCheckPlot \\
  pis/#{@tagname}/#{PINFilenames::SpectrumOfDeadtimeCorrectedCleanedEvents} \\
  nxbs/#{@tagname}/#{PINFilenames::SpectrumOfRescaledNXB} \\
  nxbs/#{@tagname}/#{PINFilenames::SpectrumOf5PercentOfNXB} \\
@@ -153,7 +153,7 @@ EOS
 		commands=<<EOS
 #create an XCM file so that users can start
 #spectral fitting soon after the spectral extraction
-pin_create_xcm_for_spectral_fitting.sh \\
+hsPINCreateXCMForSpectralFitting \\
  pis/#{@tagname}/#{PINFilenames::SpectrumOfDeadtimeCorrectedCleanedEvents} \\
  nxbs/#{@tagname}/#{PINFilenames::SpectrumOfRescaledNXB} \\
  $responsefile \\
@@ -217,7 +217,7 @@ EOS
 		commands=<<EOS
 #extract lightcurve files
 bintime=#{@analysisinformation.bintime}
-pin_extract_lightcurve_with_gti.sh \\
+hsPINExtractLightcurveWithGTI \\
  ../data/#{PINFilenames::CleanedEventFile} \\
  ../data/#{PINFilenames::NXBFile} \\
  ../data/#{PINFilenames::PseudoEventFile} \\
@@ -232,7 +232,7 @@ EOS
 	def correctDeadtimeOfLightcurves()
 		commands=<<EOS
 #correct dead time
-pin_lightcurve_correct_deadtime_and_nxb.sh \\
+hsPINLightcurveCorrectDeadTimeAndNXB \\
  lcfiles/#{@tagname}/pin_evt_bin${bintime}.lc \\
  lcfiles/#{@tagname}/pin_nxb_bin${bintime}.lc \\
  lcfiles/#{@tagname}/pin_pse_bin${bintime}.lc \\
