@@ -68,14 +68,21 @@ end
 
 f=FitsFile.open(inputFitsFile)
 hdu=nil
-if(extensionNumberOrName[0].match(/[0-9]/))then
-	hdu=f[extensionNumberOrName.to_i]
+if(extensionNumberOrName.to_i!=0)then
+	extensionIndex=extensionNumberOrName.to_i
+	puts "Extension   = #{extensionIndex} (number)"
+	hdu=f.getHDU(extensionIndex)
 else
+	puts "Extension   = #{extensionNumberOrName} (name)"
 	hdu=f[extensionNumberOrName]
 end
 
 
 timeColumn=hdu[columnName]
+if(timeColumn==nil)then
+	STDERR.puts "Error: specified colum name '#{columnName}' seems invalid"
+	exit
+end
 
 nInvalidIntervals=0
 
