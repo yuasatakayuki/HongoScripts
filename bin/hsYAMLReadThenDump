@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20140727
+
+if(ARGV.length<1)then
+	puts "Provide a YAML file to be dumped"
+	exit
+end
+		
+require "yaml"
+yaml=YAML.load(File.read(ARGV[0]))
+puts yaml
