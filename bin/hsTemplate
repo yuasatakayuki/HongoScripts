@@ -24,8 +24,39 @@ end
 # cmake
 #---------------------------------------------
 class CmakeTemplate < TemplateText
-	def initialize()
+	def initialize(option="")
 		@languageName="cmake"
+		@rootOption=""
+		@rootIncludeDir=""
+		@rootLibDir=""
+		@rootLinkLibs=""
+	end
+	def setOptions(option)
+		if(option.include?("root"))then
+			@rootOption=<<EOS
+#=============================================
+# ROOT
+#=============================================
+set(ROOTSYS $ENV{ROOTSYS})
+find_path(ROOT_INC_DIR
+	NAMES TH1.h TTree.h
+	PATHS ${ROOTSYS}/include/root ${ROOTSYS}/include)
+	find_path(ROOT_LIB_DIR
+	NAMES libHist.so libTree.so
+	PATHS ${ROOTSYS}/lib/root ${ROOTSYS}/lib)
+set(ROOT_LIB
+	Core Cint RIO Net Hist Graf Graf3d Gpad Tree
+	Rint Postscript Matrix Physics MathCore Thread)
+message("-- ROOTSYS = ${ROOTSYS}")
+message("-- ROOT_INC_DIR = ${ROOT_INC_DIR}")
+message("-- ROOT_LIB_DIR = ${ROOT_LIB_DIR}")
+add_definitions(-DROOT_RPT_ENABLED=1)
+
+EOS
+		@rootIncludeDir="${ROOT_INC_DIR}"
+		@rootLibDir="${ROOT_LIB_DIR}"
+		@rootLinkLibs="${ROOT_LIB}"
+		end
 	end
 	def to_s()
 		puts <<EOS
@@ -49,19 +80,19 @@ set(CMAKE_C_FLAGS_DEBUG "-g -W -Wall" CACHE STRING "C_FLAGS for debug")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -W -Wall" CACHE STRING "CXX_FLAGS for release")
 set(CMAKE_C_FLAGS_RELEASE "-O3 -W -Wall" CACHE STRING "C_FLAGS for release")
 
-
+#{@rootOption}
 #=============================================
 # Include path
 #=============================================
 include_directories(
-  include
+  include #{@rootIncludeDir}
 )
 
 #=============================================
 # Link directories
 #=============================================
 link_directories(
-	lib
+	lib #{@rootLibDir}
 )
 
 #=============================================
@@ -95,7 +126,7 @@ add_executable(${MAIN_TARGET}
 # Linked libraries
 #---------------------------------------------
 target_link_libraries(${MAIN_TARGET}
-  cfitsio_3.35 xerces-c
+  xerces-c #{@rootLinkLibs}
 )
 
 #=============================================
@@ -280,4 +311,8 @@ end
 
 languageName=ARGV[0]
 
+if(ARGV.length>=2)then
+	option=ARGV[1...(ARGV.length)].join(" ")
+	templates[languageName].setOptions(option)
+end
 puts templates[languageName].to_s()
