@@ -1,27 +1,33 @@
+#!/usr/bin/env ruby
+
 require 'yaml'
 
 class TierredCounters
 	attr_accessor :counter, :subCounter, :subsubCounter
 	def initialize()
-		@counter=1
-		@subCounter=1
-		@subsubCounter=1
+		@@counterInitialNumber=0
+		@counter=@@counterInitialNumber
+		@subCounter=@@counterInitialNumber
+		@subsubCounter=@@counterInitialNumber
 	end
 
 	def increment1stLevel()
-		@couter=@couter+1
-		@subCounter=1
-		@subsubCounter=1
+		@counter=@counter+1
+		@subCounter=@@counterInitialNumber
+		@subsubCounter=@@counterInitialNumber
 	end
 
 	def increment2ndLevel()
-		@subCounter=@subCouter+1
-		@subsubCounter=1
+		@subCounter=@subCounter+1
+		@subsubCounter=@@counterInitialNumber
 	end
 
 	def increment3rdLevel()
-		@subsubCounter=@subsubCouter+1
+		@subsubCounter=@subsubCounter+1
 	end
+
+	alias increment increment1stLevel
+
 end
 
 class Rule
@@ -29,9 +35,10 @@ class Rule
 	attr_accessor :sectionCounters, :tableCounters, :figureCounters
 	def initialize()
 		@ids={}
-		@sectionCounters=TierredCounters.new
-		@tableCounters=TierredCounters.new
-		@figureCounters=TierredCounters.new
+		@@sectionCounter=TierredCounters.new
+		@@tableCounter=TierredCounters.new
+		@@figureCounter=TierredCounters.new
+		@@figureLabel="Figure"
 	end
 
 	def apply(text)
@@ -55,27 +62,37 @@ class Rule
 	end
 
 	def getSectionNumber()
-		return "#{@sectionCounter}. "
+		return "#{@@sectionCounter.counter}. "
 	end
 
 	def getSubsectionNumber()
-		return "#{@sectionCounter}.#{@subsectionCounter}. "
+		return "#{@@sectionCounter.counter}.#{@@sectionCounter.subCounter}. "
 	end
 
 	def getSubsubsectionNumber()
-		return "#{@sectionCounter}.#{@subsectionCounter}.#{@subsubsectionCounter}. "
+		return "#{@@sectionCounter.counter}.#{@@sectionCounter.subCounter}.#{@@sectionCounter.subsubCounter}. "
 	end
 
 	def incrementSection()
-		@sectionCounters.increment1stLevel()
+		@@sectionCounter.increment1stLevel()
 	end
 
 	def incrementSubsection()
-		@sectionCounters.increment2ndLevel()
+		@@sectionCounter.increment2ndLevel()
 	end
 
 	def incrementSubsubsection()
-		@sectionCounters.increment3rdLevel()
+		@@sectionCounter.increment3rdLevel()
+	end
+
+	def removeQuotations(str)
+		if(str[0]=='"' or str[0]=="'")then
+			str=str[1...(str.length)]
+		end
+		if(str[str.length-1]=='"' or str[str.length-1]=="'")then
+			str=str[0...(str.length-1)]
+		end
+		return str
 	end
 end
 
@@ -227,6 +244,7 @@ class RuleLinkToURL < Rule
 end
 
 class RuleImage < Rule
+
 	def initializeVariables()
 		@height=0
 		@width=0
@@ -252,17 +270,46 @@ class RuleImage < Rule
 						width=Regexp.last_match[1]
 						height=Regexp.last_match[2]
 						sizeOption=" width=\"#{width}\" height=\"#{height}\""
-					else
-						e.match(/^([0-9]+)px/)
+					elsif(e.match(/^([0-9]+)px/))then
+						width=Regexp.last_match
+						sizeOption=" width=\"#{width}\""
+					elsif(e.match(/^([0-9\.]+)%/))then
 						width=Regexp.last_match
 						sizeOption=" width=\"#{width}\""
 					end
 				}
+				#style
+				styleOption=""
+				options.each(){|e|
+					if(e.match(/^style=.+/))then
+						styleOption=" "+Regexp.last_match.to_s
+					end
+				}
+				#caption
+				caption=""
+				options.each(){|e|
+					if(e.match(/^caption=(.+)/))then
+						caption=Regexp.last_match[1].to_s
+						caption=self.removeQuotations(caption)
+					end
+				}
 
 				#replace string
-				str=<<-EOS.strip
-<img src="#{url}"#{sizeOption}/>
-				EOS
+				if(caption=="")then #if caption is not present,
+					str=<<-EOS.strip
+<img src="#{url}"#{sizeOption}#{styleOption}/>
+					EOS
+				else #if caption is present
+					str=<<-EOS.strip
+<figure style="text-align:center;margin:auto;">
+	<img src="#{url}"#{sizeOption}#{styleOption}/>
+	<figcaption>#{@@figureLabel} #{@@figureCounter.counter}: #{caption}</figure>
+</figure>
+					EOS
+				end
+
+				#increment figure counter
+				@@figureCounter.increment
 			end
 			text.sub!(regExp,str)
 		end
@@ -370,61 +417,90 @@ end
 
 class RuleSectionHeader < Rule
 	def apply(text)
+		newText=[]
+		sectionRegExp=/^\s*\=\=(.*?)\=\=/u
+		subsectionRegExp=/^\s*\=\=\=(.*?)\=\=\=/u
+		subsubsectionRegExp=/^\s*\=\=\=\=(.*?)\=\=\=\=/u
+
+		text.each_line(){|line|
+			#search subsubsection (the deepest level first)
+			if(line.match(subsubsectionRegExp))then
+				line=createSubsubsection(line)
+				newText<<line
+				next
+			end
+
+			#search subsection
+			if(line.match(subsectionRegExp))then
+				line=createSubsection(line)
+				newText<<line
+				next
+			end
+
+			#search section
+			if(line.match(sectionRegExp))then
+				line=createSection(line)
+				newText<<line
+				next
+			end
+
+			newText<<line
+		}
+		return newText.join()
+	end
+	def createSection(line)
+		#increment section counter
+		self.incrementSection()
 		regExp=/^\s*\=\=(.*?)\=\=/u
-		while(text.match(regExp))do
-			array=splitWithBar(Regexp.last_match[1])
-			subject=array[0]
-			id=""
-			if(array[1]!=nil)then
-				id=" id=\"#{array[1]}\""
-				self.addID(id,subject)
-			end
-			str=<<-EOS.strip
-<h2#{id}>#{subject}</h2>
-			EOS
-			text.sub!(regExp, str)
+		line.match(regExp)
+		array=splitWithBar(Regexp.last_match[1])
+		subject=array[0]
+		id=""
+		if(array[1]!=nil)then
+			id=" id=\"#{array[1]}\""
+			self.addID(id,subject)
 		end
-		return text
+		str=<<-EOS.strip
+<h2#{id}>#{self.getSectionNumber}#{subject}</h2>
+		EOS
+		line.sub!(regExp, str)
+		return line
 	end
-end
-
-class RuleSubsectionHeader < Rule
-	def apply(text)
+	def createSubsection(line)
+		#increment subsection counter
+		self.incrementSubsection()
 		regExp=/^\s*\=\=\=(.*?)\=\=\=/u
-		while(text.match(regExp))do
-			array=splitWithBar(Regexp.last_match[1])
-			subject=array[0]
-			id=""
-			if(array[1]!=nil)then
-				id=" id=\"#{array[1]}\""
-				self.addID(id,subject)
-			end
-			str=<<-EOS.strip
-<h3#{id}>#{subject}</h3>
-			EOS
-			text.sub!(regExp, str)
+		line.match(regExp)
+		array=splitWithBar(Regexp.last_match[1])
+		subject=array[0]
+		id=""
+		if(array[1]!=nil)then
+			id=" id=\"#{array[1]}\""
+			self.addID(id,subject)
 		end
-		return text
+		str=<<-EOS.strip
+<h3#{id}>#{self.getSubsectionNumber()}#{subject}</h3>
+		EOS
+		line.sub!(regExp, str)
+		return line
 	end
-end
-
-class RuleSubsubsectionHeader < Rule
-	def apply(text)
+	def createSubsubsection(line)
+		#increment subsubsection counter
+		self.incrementSubsubsection()
 		regExp=/^\s*\=\=\=\=(.*?)\=\=\=\=/u
-		while(text.match(regExp))do
-			array=splitWithBar(Regexp.last_match[1])
-			subject=array[0]
-			id=""
-			if(array[1]!=nil)then
-				id=" id=\"#{array[1]}\""
-				self.addID(id,subject)
-			end
-			str=<<-EOS.strip
-<h4#{id}>#{subject}</h4>
-			EOS
-			text.sub!(regExp, str)
+		line.match(regExp)
+		array=splitWithBar(Regexp.last_match[1])
+		subject=array[0]
+		id=""
+		if(array[1]!=nil)then
+			id=" id=\"#{array[1]}\""
+			self.addID(id,subject)
 		end
-		return text
+		str=<<-EOS.strip
+<h4#{id}>#{self.getSubsubsectionNumber()}#{subject}</h4>
+		EOS
+		line.sub!(regExp, str)
+		return line
 	end
 end
 
@@ -503,15 +579,65 @@ class RuleItemize < Rule
 			if(matchedString=="")then
 				next
 			end
-			newString=[]
+
+			@itemizedBlock=[]
+			@itemizedBlockHTML=[]
 			matchedString.each_line(){|line|
-				line.gsub!(/^\s*\*+/,"")
-				newString << "<li>#{line.strip}</li>\n"
+				line.strip!()
+				@itemizedBlock<<line
 			}
-			matchedString="<ul>\n"+newString.join("\n")+"</ul>\n"
-			text.sub!(regExp, matchedString)
+			@level=0
+			@lineIndex=0
+			while(@lineIndex<@itemizedBlock.length)
+				processItemizedBlock()
+			end
+			text.sub!(regExp, @itemizedBlockHTML.join())
 		end
 		return text
+	end
+	def countItemizationLevel(line)
+		level=0
+		while(line!=nil and line[level]!=nil and line[level]=="*")
+			level=level+1
+		end
+		return level
+	end
+	def processItemizedBlock()
+		replaceRegExp=/^\s*\*+/
+
+		line=@itemizedBlock[@lineIndex]
+		if(line==nil)then
+			return
+		end
+		newLevel=countItemizationLevel(line)
+
+		if(newLevel==@level)then
+			line="\t"*(@level)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+			@itemizedBlockHTML << line
+		else
+			if(newLevel>@level)then
+				for i in 0...(newLevel-@level)
+					@itemizedBlockHTML << "\t"*(@level+i)+"<ul>\n"
+				end
+				line="\t"*(newLevel)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+				@itemizedBlockHTML << line
+			else
+				(@level-1).downto(newLevel){|i|
+					@itemizedBlockHTML << "\t"*(i)+"</ul>\n"
+				}
+				line="\t"*(newLevel)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+				@itemizedBlockHTML << line
+			end
+			@level=newLevel
+		end
+		
+		@lineIndex=@lineIndex+1
+
+		if(@lineIndex==@itemizedBlock.length)then
+			(@level-1).downto(0){|i|
+				@itemizedBlockHTML << "\t"*i+"</ul>\n"
+			}
+		end
 	end
 end
 
@@ -523,15 +649,65 @@ class RuleEnumerate < Rule
 			if(matchedString=="")then
 				next
 			end
-			newString=[]
+
+			@itemizedBlock=[]
+			@itemizedBlockHTML=[]
 			matchedString.each_line(){|line|
-				line.gsub!(/^\s*\#+/,"")
-				newString << "<li>#{line.strip}</li>\n"
+				line.strip!()
+				@itemizedBlock<<line
 			}
-			matchedString="<ol>\n"+newString.join("\n")+"</ol>\n"
-			text.sub!(regExp, matchedString)
+			@level=0
+			@lineIndex=0
+			while(@lineIndex<@itemizedBlock.length)
+				processItemizedBlock()
+			end
+			text.sub!(regExp, @itemizedBlockHTML.join())
 		end
 		return text
+	end
+	def countItemizationLevel(line)
+		level=0
+		while(line!=nil and line[level]!=nil and line[level]=="#")
+			level=level+1
+		end
+		return level
+	end
+	def processItemizedBlock()
+		replaceRegExp=/^\s*#+/
+
+		line=@itemizedBlock[@lineIndex]
+		if(line==nil)then
+			return
+		end
+		newLevel=countItemizationLevel(line)
+
+		if(newLevel==@level)then
+			line="\t"*(@level)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+			@itemizedBlockHTML << line
+		else
+			if(newLevel>@level)then
+				for i in 0...(newLevel-@level)
+					@itemizedBlockHTML << "\t"*(@level+i)+"<ol>\n"
+				end
+				line="\t"*(newLevel)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+				@itemizedBlockHTML << line
+			else
+				(@level-1).downto(newLevel){|i|
+					@itemizedBlockHTML << "\t"*(i)+"</ol>\n"
+				}
+				line="\t"*(newLevel)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+				@itemizedBlockHTML << line
+			end
+			@level=newLevel
+		end
+		
+		@lineIndex=@lineIndex+1
+
+		if(@lineIndex==@itemizedBlock.length)then
+			(@level-1).downto(0){|i|
+				@itemizedBlockHTML << "\t"*i+"</ol>\n"
+			}
+		end
 	end
 end
 
@@ -628,6 +804,8 @@ h3 {
 	font-size: 12pt;
 }
 */
+h2 { font-weight:light; }
+h3 { font-weight:light; }
 .circle{
 	width: 300px;
 	height: 300px;
@@ -648,6 +826,11 @@ a {
 .tb th { border:1px solid #ccc; background-color:#eee; }
 .tb td { border:1px solid #ccc; }
 .tb caption { text-align:center; }
+
+table, table th, table td {
+	border: solid #222 1px; 
+	border-collapse: collapse;
+}
 EOS
 
 text=<<EOS
@@ -735,11 +918,13 @@ EOS
 
 
 meta=<<EOS
+<!-- 
 <link href='http://fonts.googleapis.com/css?family=Alegreya+Sans+SC:300,400' rel='stylesheet' type='text/css'>
 <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
 <link href="http://netdna.bootstrapcdn.com/bootswatch/3.1.1/readable/bootstrap.min.css" rel="stylesheet">
 <script src="http://code.jquery.com/jquery.js"></script>
 <script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+-->
 EOS
 
 rules=Converter.new
@@ -762,8 +947,6 @@ rules << RuleItemize.new
 rules << RuleEnumerate.new
 
 #sections headings
-rules << RuleSubsubsectionHeader.new
-rules << RuleSubsectionHeader.new
 rules << RuleSectionHeader.new
 rules << RuleH1.new
 
