@@ -173,6 +173,7 @@ class Converter < Array
 	def apply(text)
 		result=text
 		self.each(){|r|
+			STDERR.puts "Applying #{r.class}"
 			result=r.apply(result)
 		}
 		return result
@@ -515,6 +516,7 @@ end
 class RuleParagraph < Rule
 	def apply(text)
 		#span objects
+		STDERR.puts " -> hashing span entries"
 		regExp=/<(strong|em|b|i|a|span)(.*?)>(.*?)<\/\1>/um
 		spanTagMap={}
 		while(text.match(regExp))
@@ -525,6 +527,7 @@ class RuleParagraph < Rule
 		end
 
 		#others
+		STDERR.puts " -> hashing div entries"
 		regExp=/<(div|h1|h2|h3|h4|h5|pre|table|hr|[^\s]*?)(.*?)>(.*?)<\/\1>/um
 		hashedTagMap={}
 		while(text.match(regExp))
@@ -534,11 +537,13 @@ class RuleParagraph < Rule
 			hashedTagMap[hash]=matchedString
 		end
 
+		STDERR.puts " -> gsubing"
 		text.gsub!(/_HASH(.*?)HASH_/um,"_HASH\n<p>\\1<\/p>\nHASH_")
 
 		# f=open("b","w")
 		# f.puts text
 
+		STDERR.puts " -> processing paragraphs"
 		regExp=/<p>(.*?)<\/p>/um
 		paragraphMap={}
 		while(text.match(regExp))
@@ -551,17 +556,20 @@ class RuleParagraph < Rule
 			text.sub!(regExp, hash)
 		end
 
+		STDERR.puts " -> processing paragraphs1"
 		paragraphMap.each(){|hash,matchedString|
 			matchedString.gsub!(/\n\n/,"\n</p>\n<p>\n")
 			text.gsub!(hash,matchedString)
 		}
 
 		#recover hashed tags
+		STDERR.puts " -> recovering hased tags"
 		hashedTagMap.each(){|hash,originalString|
 			text.gsub!(hash,originalString)
 		}
 
 		#recover span tags
+		STDERR.puts " -> recovering hased spans"
 		spanTagMap.each(){|hash,originalString|
 			text.gsub!(hash,originalString)
 		}
