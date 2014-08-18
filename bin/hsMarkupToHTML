@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 
 require 'yaml'
+require 'cgi'
 
 class TierredCounters
 	attr_accessor :counter, :subCounter, :subsubCounter
@@ -514,7 +515,208 @@ class RuleNewLine < Rule
 end
 
 class RuleParagraph < Rule
+	def initialize()
+		@insideParagraph=false
+	end
+
+	def closeParagraph()
+		@insideParagraph=false
+		return "</p>"
+	end
+
+	def openParagraph()
+		@insideParagraph=true
+		return "<p>"
+	end
+
+	def isBlankLine(line)
+		if(line.match(/^\s*$/))then
+			return true
+		else
+			return false
+		end
+	end
+
 	def apply(text)
+		text=CGI.pretty(text)
+		result=[]
+		inPre=false
+		inTable=false
+		inHeading=false
+		listLevel=0
+
+		#loop over lines
+		text.each_line(){|line|
+			#<h?>--</h?>
+			if(inPre==false and containsHeadingOpenTag(line))then
+				if(@insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				inHeading=true
+				result << line
+				next
+			end
+
+			if(inPre==true and containsHeadingCloseTag(line))then
+				inHeading=false
+				result << line
+				next
+			end
+
+			#[table]--[/table]
+			if(inPre==false and containsTableOpenTag(line))then
+				if(@insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				inTable=true
+				result << line
+				next
+			end
+
+			if(inPre==true and containsTableCloseTag(line))then
+				inTable=false
+				result << line
+				next
+			end
+
+			#<pre>--</pre>
+			if(inPre==false and containsListOpenTag(line))then
+				if(listLevel==0 and @insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				listLevel=listLevel+1
+				result << line
+				next
+			end
+
+			if(inPre==false and containsListCloseTag(line))then
+				listLevel=listLevel-1
+				if(listLevel<0)then
+					listLevel=0
+				end
+				result << line
+				next
+			end
+
+			#<p>--</p>
+			if(inPre==false and containsPreOpenTag(line))then
+				if(@insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				inPre=true
+				result << line
+				next
+			end
+
+			if(inPre==true and containsPreCloseTag(line))then
+				inPre=false
+				result << line
+				next				
+			end
+
+			if(listLevel==0 and inPre==false and inTable==false and inHeading==false and @insideParagraph==false)then
+				#start paragraph
+				result << openParagraph()
+				result << line
+				next
+			end
+
+			if(listLevel==0 and inPre==false and inTable==false and inHeading==false and @insideParagraph==true and isBlankLine(line))then #blank line separates paragraphs				
+				#close current paragraph
+				result << closeParagraph()
+				result << line
+				#start paragraph
+				result << openParagraph()
+				next
+			end
+
+			result << line
+		}
+
+		if(@insideParagraph==true)then
+			result << closeParagraph()
+		end
+
+		return CGI.pretty(result.join()).gsub(/\n\s*\n/,"\n").gsub(/^[\s\n]*<\/p>/m,"</p>")
+	end
+
+	def containsHeadingOpenTag(line)
+		line=line.downcase
+		if(line.match(/<h[0-9]/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsHeadingCloseTag(line)
+		line=line.downcase
+		if(line.match(/<\/h[0-9]/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsTableOpenTag(line)
+		line=line.downcase
+		if(line.match(/\[table/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsTableCloseTag(line)
+		line=line.downcase
+		if(line.match(/\[\/table\]/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsPreOpenTag(line)
+		line=line.downcase
+		if(line.match("<pre"))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsPreCloseTag(line)
+		line=line.downcase
+		if(line.match("</pre>"))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsListOpenTag(line)
+		line=line.downcase
+		if(line.match("<ol") or line.match("<ul"))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsListCloseTag(line)
+		line=line.downcase
+		if(line.match("</ol>") or line.match("</ul>"))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def apply_old(text)
 		#span objects
 		STDERR.puts " -> hashing span entries"
 		regExp=/<(strong|em|b|i|a|span)(.*?)>(.*?)<\/\1>/um
@@ -543,7 +745,7 @@ class RuleParagraph < Rule
 		# f=open("b","w")
 		# f.puts text
 
-		STDERR.puts " -> processing paragraphs"
+		STDERR.puts " -> processing paragraphs stage 1"
 		regExp=/<p>(.*?)<\/p>/um
 		paragraphMap={}
 		while(text.match(regExp))
@@ -556,20 +758,20 @@ class RuleParagraph < Rule
 			text.sub!(regExp, hash)
 		end
 
-		STDERR.puts " -> processing paragraphs1"
+		STDERR.puts " -> processing paragraphs stage 2"
 		paragraphMap.each(){|hash,matchedString|
 			matchedString.gsub!(/\n\n/,"\n</p>\n<p>\n")
 			text.gsub!(hash,matchedString)
 		}
 
 		#recover hashed tags
-		STDERR.puts " -> recovering hased tags"
+		STDERR.puts " -> recovering hashed tags"
 		hashedTagMap.each(){|hash,originalString|
 			text.gsub!(hash,originalString)
 		}
 
 		#recover span tags
-		STDERR.puts " -> recovering hased spans"
+		STDERR.puts " -> recovering hashed spans"
 		spanTagMap.each(){|hash,originalString|
 			text.gsub!(hash,originalString)
 		}
@@ -580,10 +782,13 @@ class RuleParagraph < Rule
 end
 
 class RuleItemize < Rule
+	def initialize()
+
+	end
 	def apply(text)
 		regExp=/(^\s*\*.*?$\n?)+/um
 		while(text.match(regExp))
-			matchedString=Regexp.last_match.to_s
+			matchedString=Regexp.last_match.to_s.strip
 			if(matchedString=="")then
 				next
 			end
@@ -835,10 +1040,15 @@ a {
 .tb td { border:1px solid #ccc; }
 .tb caption { text-align:center; }
 
-table, table th, table td {
+table, table th, table td, table tr, table tbody {
 	border: solid #222 1px; 
 	border-collapse: collapse;
 }
+
+table caption {
+	border-bottom: solid #222 1px; 
+}
+
 EOS
 
 text=<<EOS
@@ -926,13 +1136,13 @@ EOS
 
 
 meta=<<EOS
-<!-- 
+
 <link href='http://fonts.googleapis.com/css?family=Alegreya+Sans+SC:300,400' rel='stylesheet' type='text/css'>
 <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
 <link href="http://netdna.bootstrapcdn.com/bootswatch/3.1.1/readable/bootstrap.min.css" rel="stylesheet">
 <script src="http://code.jquery.com/jquery.js"></script>
 <script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
--->
+
 EOS
 
 rules=Converter.new
