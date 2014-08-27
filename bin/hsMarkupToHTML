@@ -171,11 +171,13 @@ class Converter < Array
 	def addRule(rule)
 		self<<rule
 	end
+
 	def apply(text)
 		result=text
 		self.each(){|r|
 			STDERR.puts "Applying #{r.class}"
 			result=r.apply(result)
+			STDERR.puts result
 		}
 		return result
 	end
@@ -305,7 +307,7 @@ class RuleImage < Rule
 					str=<<-EOS.strip
 <figure style="text-align:center;margin:auto;">
 	<img src="#{url}"#{sizeOption}#{styleOption}/>
-	<figcaption>#{@@figureLabel} #{@@figureCounter.counter}: #{caption}</figure>
+	<figcaption>#{@@figureLabel} #{@@figureCounter.counter}: #{caption}</figcaption>
 </figure>
 					EOS
 				end
@@ -538,15 +540,40 @@ class RuleParagraph < Rule
 	end
 
 	def apply(text)
-		text=CGI.pretty(text)
+		begin
+			text=CGI.pretty(text)
+		rescue => e
+			STDERR.puts "Error: "+e.to_s
+			STDERR.puts text
+			exit
+		end
 		result=[]
 		inPre=false
 		inTable=false
+		inFigure=false
 		inHeading=false
+		inDiv=false
 		listLevel=0
 
 		#loop over lines
 		text.each_line(){|line|
+			#<div>--</div>
+			if(inPre==false and containsDivOpenTag(line))then
+				if(@insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				inDiv=true
+				result << line
+				next
+			end
+
+			if(inPre==false and containsDivCloseTag(line))then
+				inDiv=false
+				result << line
+				next
+			end
+
 			#<h?>--</h?>
 			if(inPre==false and containsHeadingOpenTag(line))then
 				if(@insideParagraph==true)then
@@ -558,13 +585,13 @@ class RuleParagraph < Rule
 				next
 			end
 
-			if(inPre==true and containsHeadingCloseTag(line))then
+			if(inPre==false and containsHeadingCloseTag(line))then
 				inHeading=false
 				result << line
 				next
 			end
 
-			#[table]--[/table]
+			#<table>--</table>
 			if(inPre==false and containsTableOpenTag(line))then
 				if(@insideParagraph==true)then
 					#close current paragraph
@@ -575,8 +602,25 @@ class RuleParagraph < Rule
 				next
 			end
 
-			if(inPre==true and containsTableCloseTag(line))then
+			if(inPre==false and containsTableCloseTag(line))then
 				inTable=false
+				result << line
+				next
+			end
+
+			#<figure>--</figure>
+			if(inPre==false and containsFigureOpenTag(line))then
+				if(@insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				inFigure=true
+				result << line
+				next
+			end
+
+			if(inPre==false and containsFigureCloseTag(line))then
+				inFigure=false
 				result << line
 				next
 			end
@@ -618,14 +662,14 @@ class RuleParagraph < Rule
 				next				
 			end
 
-			if(listLevel==0 and inPre==false and inTable==false and inHeading==false and @insideParagraph==false)then
+			if(listLevel==0 and inPre==false and inTable==false and inFigure==false and inHeading==false and inDiv==false and @insideParagraph==false)then
 				#start paragraph
 				result << openParagraph()
 				result << line
 				next
 			end
 
-			if(listLevel==0 and inPre==false and inTable==false and inHeading==false and @insideParagraph==true and isBlankLine(line))then #blank line separates paragraphs				
+			if(listLevel==0 and inPre==false and inTable==false and inFigure==false and inHeading==false and inDiv==false and @insideParagraph==true and isBlankLine(line))then #blank line separates paragraphs				
 				#close current paragraph
 				result << closeParagraph()
 				result << line
@@ -642,6 +686,24 @@ class RuleParagraph < Rule
 		end
 
 		return CGI.pretty(result.join()).gsub(/\n\s*\n/,"\n").gsub(/^[\s\n]*<\/p>/m,"</p>")
+	end
+
+	def containsDivOpenTag(line)
+		line=line.downcase
+		if(line.match(/<div/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsDivCloseTag(line)
+		line=line.downcase
+		if(line.match(/<\/div/))then
+			return true
+		else
+			return false
+		end
 	end
 
 	def containsHeadingOpenTag(line)
@@ -664,7 +726,7 @@ class RuleParagraph < Rule
 
 	def containsTableOpenTag(line)
 		line=line.downcase
-		if(line.match(/\[table/))then
+		if(line.match(/<table/))then
 			return true
 		else
 			return false
@@ -673,7 +735,25 @@ class RuleParagraph < Rule
 
 	def containsTableCloseTag(line)
 		line=line.downcase
-		if(line.match(/\[\/table\]/))then
+		if(line.match(/<\/table/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsFigureOpenTag(line)
+		line=line.downcase
+		if(line.match(/<figure/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsFigureCloseTag(line)
+		line=line.downcase
+		if(line.match(/<\/figure/))then
 			return true
 		else
 			return false
@@ -933,7 +1013,7 @@ class RuleTable < Rule
 			tableBody=Regexp.last_match[1].to_s
 
 			#meta setting
-			regExpMetaSetting=/^--(.*?)^--/um
+			regExpMetaSetting=/^--(.*?)^--$/um
 			tableBody.match(regExpMetaSetting)
 			if(Regexp.last_match!=nil and Regexp.last_match[1]!=nil)then
 				metaInfo=YAML.load(Regexp.last_match[1].strip)
@@ -984,6 +1064,20 @@ class RuleTable < Rule
 	end
 end
 
+def downloadSyntaxHighlighter
+	url="http://alexgorbatchev.com/SyntaxHighlighter/download/download.php?sh_current"
+
+	additionalTagsInsideMeta=<<EOS
+<script type="text/javascript" src="scripts/shCore.js"></script>
+<script type="text/javascript" src="scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="scripts/shBrushCpp.js"></script>
+<link type="text/css" rel="stylesheet" href="styles/shCoreDefault.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+EOS
+
+	preTagSample='<pre class="brush: js;">'
+
+end
 
 #---------------------------------------------
 css=<<EOS
