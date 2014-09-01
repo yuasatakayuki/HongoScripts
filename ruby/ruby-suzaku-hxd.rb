@@ -49,8 +49,8 @@ EOS
 			@analysisinformation.energyrange_lowerlimit!=nil and 
                         @analysisinformation.detector=="pin"
 		)then
-			pha_upperlimit=`pin_energy_to_pi.sh #{@analysisinformation.energyrange_upperlimit}`.to_i()
-			pha_lowerlimit=`pin_energy_to_pi.sh #{@analysisinformation.energyrange_lowerlimit}`.to_i()
+			pha_upperlimit=`hsPINEnergyToPI #{@analysisinformation.energyrange_upperlimit}`.to_i()
+			pha_lowerlimit=`hsPINEnergyToPI #{@analysisinformation.energyrange_lowerlimit}`.to_i()
 			filteringcommands=filteringcommands+"filter pha_cut #{pha_lowerlimit} #{pha_upperlimit}\n"
 		end
 
@@ -61,8 +61,8 @@ EOS
 			@analysisinformation.energyrange_lowerlimit!=nil and 
                         @analysisinformation.detector=="gso"
 		)then
-			pha_upperlimit=`gso_energy_to_pi.sh #{@analysisinformation.energyrange_upperlimit}`.to_i()
-			pha_lowerlimit=`gso_energy_to_pi.sh #{@analysisinformation.energyrange_lowerlimit}`.to_i()
+			pha_upperlimit=`hsGSOEnergyToPI #{@analysisinformation.energyrange_upperlimit}`.to_i()
+			pha_lowerlimit=`hsGSOEnergyToPI #{@analysisinformation.energyrange_lowerlimit}`.to_i()
 			filteringcommands=filteringcommands+"filter pha_cut #{pha_lowerlimit} #{pha_upperlimit}\n"
 		end
 
