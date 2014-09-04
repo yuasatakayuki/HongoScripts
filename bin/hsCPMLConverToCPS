@@ -78,8 +78,9 @@ def constructAndGetHeader()
 end
 
 def getResultingCommandSequence()
-	return $resultingCommandSequence.join("\n").gsub!(/\n\n/,"\n")
+	return $resultingCommandSequence.join("\n").gsub(/\n\n/,"\n")
 end
+
 def output()
 	if($outputFileName=="")then
 		puts constructAndGetHeader()
@@ -246,11 +247,13 @@ def processCommandExecution(line)
 		$blockOfCheckCommands << line
 		$blockOfCheckCommandsStoppers << $stopper
 	else
-		#this means an end of a block of check commands,
-		#and therefore, dumps check table and check
-		#commands themselves.
-		if($processingBlockOfCheckCommands)then
-			dumpBlockOfCheckCommands()
+		if($processingBlockOfCheckCommands==true)then
+			#this means an end of a block of check commands,
+			#and therefore, dumps check table and check
+			#commands themselves.
+			if($processingBlockOfCheckCommands)then
+				dumpBlockOfCheckCommands()
+			end
 		end
 		dump line
 	end
