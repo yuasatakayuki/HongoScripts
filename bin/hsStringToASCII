@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20140724
+
+if(ARGV.length<1)then
+	puts "Provide string which should be converted to hex ASCII string"
+	exit
+end
+
+str=ARGV[0]
+for i in 0...(str.length)
+	print "%02x"%str[i].ord
+end
+		

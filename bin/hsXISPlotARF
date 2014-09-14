@@ -1,0 +1,66 @@
+#!/bin/bash
+
+#Takayuki Yuasa 20140901
+
+if [ _$2 = _ ]; then
+	echo "Provide ARF file name and output PDF file name"
+	exit
+fi
+
+inputARFFileName=$1
+outputPDFFileName=$2
+
+dir=`dirname $outputPDFFileName`
+
+if [ ! -d $dir ]; then
+	echo "Error: output directory not found"
+	exit
+fi
+
+outputDataFileName=`echo $outputPDFFileName | sed -e 's/\.pdf/\.data/g'`
+outputPSFileName=`echo $outputPDFFileName | sed -e 's/\.pdf/\.ps/g'`
+
+echo "Extracting data"
+ruby << EOF
+require "RubyFits"
+fits=Fits::FitsFile.new("$inputARFFileName")
+hdu=fits[1]
+
+outputDataFile=open("$outputDataFileName","w")
+
+length=hdu[0].length
+for i in 0...length
+	outputDataFile.puts "#{hdu["ENERG_LO"][i]} #{hdu["SPECRESP"][i]} #{hdu["RESPERR"][i]}"
+end
+
+outputDataFile.close()
+EOF
+
+echo "Plotting"
+gnuplot << EOF
+set term post col "Helvetica" 14
+set size ratio 1
+unset key
+set out "$outputPSFileName"
+plot "$outputDataFileName" u 1:2:3 w yer
+quit
+EOF
+
+if [ ! -f $outputPSFileName ]; then
+	echo "Error: plot failed"
+	exit
+fi
+
+
+echo "Converting to PDF"
+pushd $dir &> /dev/null
+ps2pdf `basename $outputPSFileName`
+rm -f `basename $outputPSFileName`
+popd &> /dev/null
+
+if [ ! -f $outputPDFFileName ]; then
+	echo "Error: pdf conversion failed"
+	exit
+else
+	echo "Completed"
+fi

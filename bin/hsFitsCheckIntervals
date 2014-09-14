@@ -1,0 +1,111 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20140722
+
+if(ARGV.length<3)then
+	puts <<EOS
+Provide:
+	1: FITS file
+	2: extension number (0 = PrimaryHDU) or name
+	3: column name to be checked
+	4: interval
+	5: mod (e.g. 60 if interval is expressed in units of seconds)
+EOS
+	exit
+end
+
+require "RubyFits"
+include Fits
+
+#---------------------------------------------
+#constants
+#---------------------------------------------
+FindIntervalMaxLoop=10
+MinimumEntries=10
+
+#---------------------------------------------
+#function
+#---------------------------------------------
+def getTimeAsString(hdu, rowIndex)
+	str= <<EOS
+#{hdu["YYYY"][rowIndex]}-#{hdu["DDD"][rowIndex]} #{"%02d"%hdu["HH"][rowIndex]}:#{"%02d"%hdu["MM"][rowIndex]}:#{"%02d"%hdu["SS"][rowIndex]}
+EOS
+	return str.strip
+end
+
+#no longer used. interval should be manually specified
+def findInterval(timeColumn)
+	interval=-1
+	i=0
+	while(interval<0 and i<FindIntervalMaxLoop-1)
+		puts "Finding interval #{i}"
+		interval=timeColumn[i+1]-timeColumn[i]
+		interval2=timeColumn[i+2]-timeColumn[i+1]
+		if(interval==interval2)then
+			puts "Possible interval found #{interval}"
+			return interval
+		end
+		interval=-1
+		i=i+1
+	end
+	STDERR.puts "Error: interval cannot be automatically determined"
+	exit
+end
+
+#---------------------------------------------
+#main
+#---------------------------------------------
+inputFitsFile=ARGV[0]
+extensionNumberOrName=ARGV[1]
+columnName=ARGV[2]
+interval=ARGV[3].to_i
+mod=ARGV[4].to_i
+
+if(!File.exist?(inputFitsFile))then
+	STDERR.puts "Error: file not found"
+	exit
+end
+
+f=FitsFile.open(inputFitsFile)
+hdu=nil
+if(extensionNumberOrName.to_i!=0)then
+	extensionIndex=extensionNumberOrName.to_i
+	puts "Extension   = #{extensionIndex} (number)"
+	hdu=f.getHDU(extensionIndex)
+else
+	puts "Extension   = #{extensionNumberOrName} (name)"
+	hdu=f[extensionNumberOrName]
+end
+
+
+timeColumn=hdu[columnName]
+if(timeColumn==nil)then
+	STDERR.puts "Error: specified colum name '#{columnName}' seems invalid"
+	exit
+end
+
+nInvalidIntervals=0
+
+if(timeColumn.length>MinimumEntries)then	
+	puts "Extension   = #{hdu.getName}"
+	puts "Column      = #{columnName}"
+	puts "Inverval    = #{interval}"
+	puts "Num entries = #{timeColumn.length}"
+
+	#check
+	for i in 0...(timeColumn.length)
+		difference=timeColumn[i]-timeColumn[i-1]
+		if(difference<0)then
+			difference=difference+mod
+		end
+		if(difference!=interval)then
+			STDERR.puts "Warning: #{getTimeAsString(hdu,i)} Row #{i} invalid interval #{difference}"
+			nInvalidIntervals=nInvalidIntervals+1
+		end
+	end
+else
+	STDERR.puts "Error: too small entries"
+	exit
+end
+
+puts "Total #{nInvalidIntervals} invalid intervals among total #{timeColumn.length} entries"

@@ -29,6 +29,7 @@ signals=[]
 connections=[]
 componentname=""
 open("$file").each {|line|
+ line.gsub!(/--.*?$/,"")
  head=line.split(" ")[0]
  if(head==nil)then
   next

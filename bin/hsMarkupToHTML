@@ -1,0 +1,1284 @@
+#!/usr/bin/env ruby
+
+require 'yaml'
+require 'cgi'
+
+class TierredCounters
+	attr_accessor :counter, :subCounter, :subsubCounter
+	def initialize()
+		@@counterInitialNumber=0
+		@counter=@@counterInitialNumber
+		@subCounter=@@counterInitialNumber
+		@subsubCounter=@@counterInitialNumber
+	end
+
+	def increment1stLevel()
+		@counter=@counter+1
+		@subCounter=@@counterInitialNumber
+		@subsubCounter=@@counterInitialNumber
+	end
+
+	def increment2ndLevel()
+		@subCounter=@subCounter+1
+		@subsubCounter=@@counterInitialNumber
+	end
+
+	def increment3rdLevel()
+		@subsubCounter=@subsubCounter+1
+	end
+
+	alias increment increment1stLevel
+
+end
+
+class Rule
+	attr_accessor :ids
+	attr_accessor :sectionCounters, :tableCounters, :figureCounters
+	def initialize()
+		@ids={}
+		@@sectionCounter=TierredCounters.new
+		@@tableCounter=TierredCounters.new
+		@@figureCounter=TierredCounters.new
+		@@figureLabel="Figure"
+	end
+
+	def apply(text)
+		return text
+	end
+
+	def getRuleDescription()
+		return "This is a syntax rule."
+	end
+
+	def splitWithBar(str)
+		array=str.split("|")
+		array.each(){|e|
+			e.strip!()
+		}
+		return array
+	end
+
+	def addID(id, title)
+		ids[id]=title
+	end
+
+	def getSectionNumber()
+		return "#{@@sectionCounter.counter}. "
+	end
+
+	def getSubsectionNumber()
+		return "#{@@sectionCounter.counter}.#{@@sectionCounter.subCounter}. "
+	end
+
+	def getSubsubsectionNumber()
+		return "#{@@sectionCounter.counter}.#{@@sectionCounter.subCounter}.#{@@sectionCounter.subsubCounter}. "
+	end
+
+	def incrementSection()
+		@@sectionCounter.increment1stLevel()
+	end
+
+	def incrementSubsection()
+		@@sectionCounter.increment2ndLevel()
+	end
+
+	def incrementSubsubsection()
+		@@sectionCounter.increment3rdLevel()
+	end
+
+	def removeQuotations(str)
+		if(str[0]=='"' or str[0]=="'")then
+			str=str[1...(str.length)]
+		end
+		if(str[str.length-1]=='"' or str[str.length-1]=="'")then
+			str=str[0...(str.length-1)]
+		end
+		return str
+	end
+end
+
+class Converter < Array
+	attr_accessor :title, :author, :sectionNumbering
+	
+	def initialize()
+		@title=""
+		@author=""
+		@cssString=""
+		@metaTags=""
+		@sectionNumbering=false
+	end
+
+	def header(title="", css="")
+		@cssString=@cssString+css
+		str=<<-EOS
+<html>
+<head>
+<meta charset="utf-8">
+#{@metaTags.strip}
+<style>
+#{@cssString.strip}
+</style>
+<title>#{@title}</title>
+</head>
+<body>
+		EOS
+		return str
+	end
+
+	def containerStart()
+		str=<<-EOS
+<div class="container">
+		EOS
+		return str
+	end
+
+	def containerEnd()
+		str=<<-EOS
+</div>
+		EOS
+	end
+
+	def footer()
+		str=<<-EOS
+</body>
+</html>
+		EOS
+		return str
+	end
+
+	def setMetaInformation(text)
+		regExp=/\[[m|M]eta\](.*?)\[\/[m|M]eta\]/mu
+		text.match(regExp)
+		if(Regexp.last_match==nil or Regexp.last_match[1]==nil)then
+			return
+		end
+		metaInformation=YAML.load(Regexp.last_match[1])
+		@title=metaInformation["title"]
+		@author=metaInformation["author"]
+		@sectionNumbering=metaInformation["sectionNumbering"]
+		text.gsub!(regExp,"")
+		text.strip!
+	end
+
+	def setCSS(cssString)
+		@cssString=@cssString+"\n"+cssString
+	end
+
+	def setMetaTag(metaTag)
+		@metaTags=@metaTags+"\n"+metaTag
+	end
+
+	def addRule(rule)
+		self<<rule
+	end
+
+	def apply(text)
+		result=text
+		self.each(){|r|
+			STDERR.puts "Applying #{r.class}"
+			result=r.apply(result)
+		}
+		return result
+	end
+end
+
+
+class RuleStrong < Rule
+	def apply(text)
+		regExp=/'''(.*?)'''/um
+		while(text.match regExp)do
+			strongText=Regexp.last_match[1]
+			str=<<-EOS.strip
+<strong>#{strongText.strip}</strong>
+			EOS
+			text.sub!(regExp,str)
+		end
+		return text
+	end
+end
+
+class RuleEmphasis < Rule
+	def apply(text)
+		regExp=/''(.*?)''/um
+		while(text.match regExp)do
+			emText=Regexp.last_match[1]
+			str=<<-EOS.strip
+<em>#{emText.strip}</em>
+			EOS
+			text.sub!(regExp,str)
+		end
+		return text
+	end
+end
+
+
+class RuleLinkToURL < Rule
+	def apply(text)
+		regExp=/\[(.*?)\]/u
+		while(text.match regExp)do
+			insideLinkBracket=Regexp.last_match[1]
+			array=splitWithBar(insideLinkBracket)
+			str=""
+
+			#URL
+			url=array[0]
+			if(url==nil or url=="")then
+				str=""
+			else
+				#description
+				description=""
+				description=array[1] if array[1]!=nil
+
+				#remaining options
+				options=[]
+				if(array.length>2)then
+					options=array[2...(array.length)]
+				end
+
+				#replace string
+				str=<<-EOS.strip
+<a href=\"#{url}\" #{options.join(" ")}>#{if(description!=nil)then description else url end}</a>
+				EOS
+			end
+			text.sub!(regExp,str)
+		end
+		return text
+	end
+end
+
+class RuleImage < Rule
+
+	def initializeVariables()
+		@height=0
+		@width=0
+		@alt=""
+	end
+	def apply(text)
+		regExp=/\[[iI]mage:(.*?)\]/u
+		while(text.match regExp)do
+			insideLinkBracket=Regexp.last_match[1]
+			array=splitWithBar(insideLinkBracket)
+			str=""
+
+			#URL
+			url=array[0]
+			options=array[1...(array.length)]
+			if(url==nil or url=="")then
+				str=""
+			else
+				#size
+				sizeOption=""
+				options.each(){|e|
+					if(e.match(/^([0-9]+)x([0-9]+)px/))then
+						width=Regexp.last_match[1]
+						height=Regexp.last_match[2]
+						sizeOption=" width=\"#{width}\" height=\"#{height}\""
+					elsif(e.match(/^([0-9]+)px/))then
+						width=Regexp.last_match
+						sizeOption=" width=\"#{width}\""
+					elsif(e.match(/^([0-9\.]+)%/))then
+						width=Regexp.last_match
+						sizeOption=" width=\"#{width}\""
+					end
+				}
+				#style
+				styleOption=""
+				options.each(){|e|
+					if(e.match(/^style=.+/))then
+						styleOption=" "+Regexp.last_match.to_s
+					end
+				}
+				#caption
+				caption=""
+				options.each(){|e|
+					if(e.match(/^caption=(.+)/))then
+						caption=Regexp.last_match[1].to_s
+						caption=self.removeQuotations(caption)
+					end
+				}
+
+				#replace string
+				if(caption=="")then #if caption is not present,
+					str=<<-EOS.strip
+<img src="#{url}"#{sizeOption}#{styleOption}/>
+					EOS
+				else #if caption is present
+					str=<<-EOS.strip
+<figure style="text-align:center;margin:auto;">
+	<img src="#{url}"#{sizeOption}#{styleOption}/>
+	<figcaption>#{@@figureLabel} #{@@figureCounter.counter}: #{caption}</figcaption>
+</figure>
+					EOS
+				end
+
+				#increment figure counter
+				@@figureCounter.increment
+			end
+			text.sub!(regExp,str)
+		end
+		return text
+	end
+end
+
+$verbatimMap={}
+$preMap={}
+
+class RuleVerbatim < Rule
+	def apply(text)
+		regExp=/\[verbatim\](.*?)\[\/verbatim\]/um
+		while(text.match(regExp))do
+			verbatimedPhrase=Regexp.last_match[1]
+			hash=verbatimedPhrase.hash.to_s(32)
+			while($verbatimMap[hash]!=nil)do
+				hash=hash+"_"
+			end
+			$verbatimMap[hash]=verbatimedPhrase
+			text.sub!(regExp, hash)
+		end
+
+		regExp=/<pre>(.*?)<\/pre>/um
+		while(text.match(regExp))do
+			prePhrase=Regexp.last_match.to_s
+			hash=prePhrase.hash.to_s(32)
+			while($preMap[hash]!=nil)do
+				hash=hash+"_"
+			end
+			$preMap[hash]=prePhrase
+			text.sub!(regExp, hash)
+		end
+
+		return text
+	end
+end
+
+class RuleUnVerbatim < Rule
+	def apply(text)
+		$verbatimMap.each(){|hash,phrase|
+			text.gsub!(hash,phrase)
+		}
+		$preMap.each(){|hash,phrase|
+			text.gsub!(hash,phrase)
+		}
+		return text
+	end
+end
+
+class RuleTextAlign < Rule
+	def apply(text)
+		regExp=/\[(center|centering|left|right|justify)\](.*?)\[\/\1\]/um
+		while(text.match(regExp))do
+			position=Regexp.last_match[1].to_s
+			body=Regexp.last_match[2].to_s
+			alignClass=""
+			if(position=="center" or position=="centering")then
+				alignClass="text-center"
+			elsif(position=="left")then
+				alignClass="text-left"
+			elsif(position=="right")then
+				alignClass="text-right"
+			elsif(position=="justify")then
+				alignClass="text-justify"
+			end
+			str=<<-EOS.strip
+<div class="#{alignClass}">
+#{body.strip}
+</div>
+			EOS
+			text.sub!(regExp, str)
+		end
+		return text
+	end
+end
+
+class RuleEmptyParagraphRemover < Rule
+	def apply(text)
+		regExp=/<[pP]>[\s\n]*<\/[p|P]>/um
+		text.gsub!(regExp, "")
+		return text
+	end
+end
+
+class RuleH1 < Rule
+	def apply(text)
+		regExp=/^\s*\=(.*?)\=/u
+		while(text.match(regExp))do
+			array=splitWithBar(Regexp.last_match[1])
+			subject=array[0]
+			id=""
+			if(array[1]!=nil)then
+				id=" id=\"#{array[1]}\""
+				self.addID(id,subject)
+			end
+			str=<<-EOS.strip
+<h1 class="text-center"#{id}>#{subject}</h1>
+			EOS
+			text.sub!(regExp, str)
+		end
+		return text
+	end
+end
+
+class RuleSectionHeader < Rule
+	def apply(text)
+		newText=[]
+		sectionRegExp=/^\s*\=\=(.*?)\=\=/u
+		subsectionRegExp=/^\s*\=\=\=(.*?)\=\=\=/u
+		subsubsectionRegExp=/^\s*\=\=\=\=(.*?)\=\=\=\=/u
+
+		text.each_line(){|line|
+			#search subsubsection (the deepest level first)
+			if(line.match(subsubsectionRegExp))then
+				line=createSubsubsection(line)
+				newText<<line
+				next
+			end
+
+			#search subsection
+			if(line.match(subsectionRegExp))then
+				line=createSubsection(line)
+				newText<<line
+				next
+			end
+
+			#search section
+			if(line.match(sectionRegExp))then
+				line=createSection(line)
+				newText<<line
+				next
+			end
+
+			newText<<line
+		}
+		return newText.join()
+	end
+	def createSection(line)
+		#increment section counter
+		self.incrementSection()
+		regExp=/^\s*\=\=(.*?)\=\=/u
+		line.match(regExp)
+		array=splitWithBar(Regexp.last_match[1])
+		subject=array[0]
+		id=""
+		if(array[1]!=nil)then
+			id=" id=\"#{array[1]}\""
+			self.addID(id,subject)
+		end
+		str=<<-EOS.strip
+<h2#{id}>#{self.getSectionNumber}#{subject}</h2>
+		EOS
+		line.sub!(regExp, str)
+		return line
+	end
+	def createSubsection(line)
+		#increment subsection counter
+		self.incrementSubsection()
+		regExp=/^\s*\=\=\=(.*?)\=\=\=/u
+		line.match(regExp)
+		array=splitWithBar(Regexp.last_match[1])
+		subject=array[0]
+		id=""
+		if(array[1]!=nil)then
+			id=" id=\"#{array[1]}\""
+			self.addID(id,subject)
+		end
+		str=<<-EOS.strip
+<h3#{id}>#{self.getSubsectionNumber()}#{subject}</h3>
+		EOS
+		line.sub!(regExp, str)
+		return line
+	end
+	def createSubsubsection(line)
+		#increment subsubsection counter
+		self.incrementSubsubsection()
+		regExp=/^\s*\=\=\=\=(.*?)\=\=\=\=/u
+		line.match(regExp)
+		array=splitWithBar(Regexp.last_match[1])
+		subject=array[0]
+		id=""
+		if(array[1]!=nil)then
+			id=" id=\"#{array[1]}\""
+			self.addID(id,subject)
+		end
+		str=<<-EOS.strip
+<h4#{id}>#{self.getSubsubsectionNumber()}#{subject}</h4>
+		EOS
+		line.sub!(regExp, str)
+		return line
+	end
+end
+
+class RuleNewLine < Rule
+	def apply(text)
+		regExp=/\n\n/u
+		text.gsub!(regExp,"<br/>\n\n")
+		return text
+	end
+end
+
+class RuleParagraph < Rule
+	def initialize()
+		@insideParagraph=false
+	end
+
+	def closeParagraph()
+		@insideParagraph=false
+		return "</p>"
+	end
+
+	def openParagraph()
+		@insideParagraph=true
+		return "<p>"
+	end
+
+	def isBlankLine(line)
+		if(line.match(/^\s*$/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def apply(text)
+		begin
+			text=CGI.pretty(text)
+		rescue => e
+			STDERR.puts "Error: "+e.to_s
+			STDERR.puts text
+			exit
+		end
+		result=[]
+		inPre=false
+		inTable=false
+		inFigure=false
+		inHeading=false
+		inDiv=false
+		listLevel=0
+
+		#loop over lines
+		text.each_line(){|line|
+			#<div>--</div>
+			if(inPre==false and containsDivOpenTag(line))then
+				if(@insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				inDiv=true
+				result << line
+				next
+			end
+
+			if(inPre==false and containsDivCloseTag(line))then
+				inDiv=false
+				result << line
+				next
+			end
+
+			#<h?>--</h?>
+			if(inPre==false and containsHeadingOpenTag(line))then
+				if(@insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				inHeading=true
+				result << line
+				next
+			end
+
+			if(inPre==false and containsHeadingCloseTag(line))then
+				inHeading=false
+				result << line
+				next
+			end
+
+			#<table>--</table>
+			if(inPre==false and containsTableOpenTag(line))then
+				if(@insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				inTable=true
+				result << line
+				next
+			end
+
+			if(inPre==false and containsTableCloseTag(line))then
+				inTable=false
+				result << line
+				next
+			end
+
+			#<figure>--</figure>
+			if(inPre==false and containsFigureOpenTag(line))then
+				if(@insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				inFigure=true
+				result << line
+				next
+			end
+
+			if(inPre==false and containsFigureCloseTag(line))then
+				inFigure=false
+				result << line
+				next
+			end
+
+			#<pre>--</pre>
+			if(inPre==false and containsListOpenTag(line))then
+				if(listLevel==0 and @insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				listLevel=listLevel+1
+				result << line
+				next
+			end
+
+			if(inPre==false and containsListCloseTag(line))then
+				listLevel=listLevel-1
+				if(listLevel<0)then
+					listLevel=0
+				end
+				result << line
+				next
+			end
+
+			#<p>--</p>
+			if(inPre==false and containsPreOpenTag(line))then
+				if(@insideParagraph==true)then
+					#close current paragraph
+					result << closeParagraph()
+				end
+				inPre=true
+				result << line
+				next
+			end
+
+			if(inPre==true and containsPreCloseTag(line))then
+				inPre=false
+				result << line
+				next				
+			end
+
+			if(listLevel==0 and inPre==false and inTable==false and inFigure==false and inHeading==false and inDiv==false and @insideParagraph==false)then
+				#start paragraph
+				result << openParagraph()
+				result << line
+				next
+			end
+
+			if(listLevel==0 and inPre==false and inTable==false and inFigure==false and inHeading==false and inDiv==false and @insideParagraph==true and isBlankLine(line))then #blank line separates paragraphs				
+				#close current paragraph
+				result << closeParagraph()
+				result << line
+				#start paragraph
+				result << openParagraph()
+				next
+			end
+
+			result << line
+		}
+
+		if(@insideParagraph==true)then
+			result << closeParagraph()
+		end
+
+		return CGI.pretty(result.join()).gsub(/\n\s*\n/,"\n").gsub(/^[\s\n]*<\/p>/m,"</p>")
+	end
+
+	def containsDivOpenTag(line)
+		line=line.downcase
+		if(line.match(/<div/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsDivCloseTag(line)
+		line=line.downcase
+		if(line.match(/<\/div/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsHeadingOpenTag(line)
+		line=line.downcase
+		if(line.match(/<h[0-9]/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsHeadingCloseTag(line)
+		line=line.downcase
+		if(line.match(/<\/h[0-9]/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsTableOpenTag(line)
+		line=line.downcase
+		if(line.match(/<table/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsTableCloseTag(line)
+		line=line.downcase
+		if(line.match(/<\/table/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsFigureOpenTag(line)
+		line=line.downcase
+		if(line.match(/<figure/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsFigureCloseTag(line)
+		line=line.downcase
+		if(line.match(/<\/figure/))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsPreOpenTag(line)
+		line=line.downcase
+		if(line.match("<pre"))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsPreCloseTag(line)
+		line=line.downcase
+		if(line.match("</pre>"))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsListOpenTag(line)
+		line=line.downcase
+		if(line.match("<ol") or line.match("<ul"))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def containsListCloseTag(line)
+		line=line.downcase
+		if(line.match("</ol>") or line.match("</ul>"))then
+			return true
+		else
+			return false
+		end
+	end
+
+	def apply_old(text)
+		#span objects
+		STDERR.puts " -> hashing span entries"
+		regExp=/<(strong|em|b|i|a|span)(.*?)>(.*?)<\/\1>/um
+		spanTagMap={}
+		while(text.match(regExp))
+			matchedString=Regexp.last_match[0]
+			hash="SPAN_"+matchedString.hash.to_s(32)+"_SPAN"
+			text.sub!(regExp,hash)
+			spanTagMap[hash]=matchedString
+		end
+
+		#others
+		STDERR.puts " -> hashing div entries"
+		regExp=/<(div|h1|h2|h3|h4|h5|pre|table|hr|[^\s]*?)(.*?)>(.*?)<\/\1>/um
+		hashedTagMap={}
+		while(text.match(regExp))
+			matchedString=Regexp.last_match[0]
+			hash="HASH_"+matchedString.hash.to_s(32)+"_HASH"
+			text.sub!(regExp,hash)
+			hashedTagMap[hash]=matchedString
+		end
+
+		STDERR.puts " -> gsubing"
+		text.gsub!(/_HASH(.*?)HASH_/um,"_HASH\n<p>\\1<\/p>\nHASH_")
+
+		# f=open("b","w")
+		# f.puts text
+
+		STDERR.puts " -> processing paragraphs stage 1"
+		regExp=/<p>(.*?)<\/p>/um
+		paragraphMap={}
+		while(text.match(regExp))
+			matchedString=Regexp.last_match.to_s
+			if(matchedString=="")then
+				next
+			end
+			hash=matchedString.hash.to_s(32)
+			paragraphMap[hash]=matchedString
+			text.sub!(regExp, hash)
+		end
+
+		STDERR.puts " -> processing paragraphs stage 2"
+		paragraphMap.each(){|hash,matchedString|
+			matchedString.gsub!(/\n\n/,"\n</p>\n<p>\n")
+			text.gsub!(hash,matchedString)
+		}
+
+		#recover hashed tags
+		STDERR.puts " -> recovering hashed tags"
+		hashedTagMap.each(){|hash,originalString|
+			text.gsub!(hash,originalString)
+		}
+
+		#recover span tags
+		STDERR.puts " -> recovering hashed spans"
+		spanTagMap.each(){|hash,originalString|
+			text.gsub!(hash,originalString)
+		}
+
+
+		return text
+	end
+end
+
+class RuleItemize < Rule
+	def initialize()
+
+	end
+	def apply(text)
+		regExp=/(^\s*\*.*?$\n?)+/um
+		while(text.match(regExp))
+			matchedString=Regexp.last_match.to_s.strip
+			if(matchedString=="")then
+				next
+			end
+
+			@itemizedBlock=[]
+			@itemizedBlockHTML=[]
+			matchedString.each_line(){|line|
+				line.strip!()
+				@itemizedBlock<<line
+			}
+			@level=0
+			@lineIndex=0
+			while(@lineIndex<@itemizedBlock.length)
+				processItemizedBlock()
+			end
+			text.sub!(regExp, @itemizedBlockHTML.join())
+		end
+		return text
+	end
+	def countItemizationLevel(line)
+		level=0
+		while(line!=nil and line[level]!=nil and line[level]=="*")
+			level=level+1
+		end
+		return level
+	end
+	def processItemizedBlock()
+		replaceRegExp=/^\s*\*+/
+
+		line=@itemizedBlock[@lineIndex]
+		if(line==nil)then
+			return
+		end
+		newLevel=countItemizationLevel(line)
+
+		if(newLevel==@level)then
+			line="\t"*(@level)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+			@itemizedBlockHTML << line
+		else
+			if(newLevel>@level)then
+				for i in 0...(newLevel-@level)
+					@itemizedBlockHTML << "\t"*(@level+i)+"<ul>\n"
+				end
+				line="\t"*(newLevel)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+				@itemizedBlockHTML << line
+			else
+				(@level-1).downto(newLevel){|i|
+					@itemizedBlockHTML << "\t"*(i)+"</ul>\n"
+				}
+				line="\t"*(newLevel)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+				@itemizedBlockHTML << line
+			end
+			@level=newLevel
+		end
+		
+		@lineIndex=@lineIndex+1
+
+		if(@lineIndex==@itemizedBlock.length)then
+			(@level-1).downto(0){|i|
+				@itemizedBlockHTML << "\t"*i+"</ul>\n"
+			}
+		end
+	end
+end
+
+class RuleEnumerate < Rule
+	def apply(text)
+		regExp=/(^\s*#.*?$\n?)+/um
+		while(text.match(regExp))
+			matchedString=Regexp.last_match.to_s
+			if(matchedString=="")then
+				next
+			end
+
+			@itemizedBlock=[]
+			@itemizedBlockHTML=[]
+			matchedString.each_line(){|line|
+				line.strip!()
+				@itemizedBlock<<line
+			}
+			@level=0
+			@lineIndex=0
+			while(@lineIndex<@itemizedBlock.length)
+				processItemizedBlock()
+			end
+			text.sub!(regExp, @itemizedBlockHTML.join())
+		end
+		return text
+	end
+	def countItemizationLevel(line)
+		level=0
+		while(line!=nil and line[level]!=nil and line[level]=="#")
+			level=level+1
+		end
+		return level
+	end
+	def processItemizedBlock()
+		replaceRegExp=/^\s*#+/
+
+		line=@itemizedBlock[@lineIndex]
+		if(line==nil)then
+			return
+		end
+		newLevel=countItemizationLevel(line)
+
+		if(newLevel==@level)then
+			line="\t"*(@level)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+			@itemizedBlockHTML << line
+		else
+			if(newLevel>@level)then
+				for i in 0...(newLevel-@level)
+					@itemizedBlockHTML << "\t"*(@level+i)+"<ol>\n"
+				end
+				line="\t"*(newLevel)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+				@itemizedBlockHTML << line
+			else
+				(@level-1).downto(newLevel){|i|
+					@itemizedBlockHTML << "\t"*(i)+"</ol>\n"
+				}
+				line="\t"*(newLevel)+"<li>"+line.sub(replaceRegExp,"")+"</li>\n"
+				@itemizedBlockHTML << line
+			end
+			@level=newLevel
+		end
+		
+		@lineIndex=@lineIndex+1
+
+		if(@lineIndex==@itemizedBlock.length)then
+			(@level-1).downto(0){|i|
+				@itemizedBlockHTML << "\t"*i+"</ol>\n"
+			}
+		end
+	end
+end
+
+class RuleTable < Rule
+	def apply(text)
+		regExp=/\[[tT]able\](.*?)\[\/[tT]able\]/um
+		caption=""
+		align=""
+		while(text.match(regExp))
+			tableBody=Regexp.last_match[1].to_s
+
+			#meta setting
+			regExpMetaSetting=/^--(.*?)^--$/um
+			tableBody.match(regExpMetaSetting)
+			if(Regexp.last_match!=nil and Regexp.last_match[1]!=nil)then
+				metaInfo=YAML.load(Regexp.last_match[1].strip)
+				if(metaInfo["caption"]!=nil)then
+					caption=metaInfo["caption"]
+				end
+				if(metaInfo["align"]!=nil)then
+					align=metaInfo["align"]
+				end
+			end
+			
+			#table tag
+			tableTag=<<-EOS
+<table class="table table-striped">
+			EOS
+
+			#caption
+			if(caption!="")then
+				tableTag=tableTag + <<-EOS
+<caption>#{caption}</caption>
+				EOS
+			end
+
+			tableBody.gsub!(regExpMetaSetting,"")
+
+			#body
+			tableBody.strip.each_line(){|line|
+				line.strip!()
+				tableTag=tableTag+"<tr>"
+				if(line[0]!='!')then
+					line.split("|").each(){|e|
+						tableTag=tableTag+"<td>"+e.strip()+"</td>"
+					}
+				else
+					line=line[1...(line.length)]					
+					line.split("|").each(){|e|
+						tableTag=tableTag+"<th>"+e.strip()+"</th>"
+					}		
+				end
+				tableTag=tableTag+"</tr>\n"
+			}
+			tableTag=tableTag+<<-EOS
+</table>
+			EOS
+			text.sub!(regExp,tableTag)
+		end
+		return text
+	end
+end
+
+def downloadSyntaxHighlighter
+	url="http://alexgorbatchev.com/SyntaxHighlighter/download/download.php?sh_current"
+
+	additionalTagsInsideMeta=<<EOS
+<script type="text/javascript" src="scripts/shCore.js"></script>
+<script type="text/javascript" src="scripts/shBrushJScript.js"></script>
+<script type="text/javascript" src="scripts/shBrushCpp.js"></script>
+<link type="text/css" rel="stylesheet" href="styles/shCoreDefault.css"/>
+<script type="text/javascript">SyntaxHighlighter.all();</script>
+EOS
+
+	preTagSample='<pre class="brush: js;">'
+
+end
+
+#---------------------------------------------
+css=<<EOS
+body {
+	font-family: 'Helvetica Neue', 'Helvetica', 'Myriad Pro', 'Alegreya Sans SC', sans-serif;
+	background-color: white;
+	font-size: 11pt;
+
+}
+/*
+h2 {
+	border-left: 5px solid black;
+	border-bottom: 1px solid black;
+	padding-left: 15px;
+	padding-bottom: 5px;
+	padding-top: 5px;
+	width: 100%;
+	margin: 0 auto;
+	align:left;
+	display: inline-block;
+	font-size: 14pt;
+}
+
+h3 {
+	#border-left: 5px solid black;
+	#border-bottom: 1px solid black;
+	#padding-left: 15px;
+	padding-bottom: 5px;
+	padding-top: 5px;
+	width: 80%;
+	font-size: 12pt;
+}
+*/
+h2 { font-weight:light; }
+h3 { font-weight:light; }
+.circle{
+	width: 300px;
+	height: 300px;
+	-webkit-border-radius: 50%;/* 50%でもOK */
+	-moz-border-radius: 50%;
+	border-radius: 50%;
+	background-color: #359bed;/* 円の色 */
+	color: white; 
+	vertical-align:middle;
+}
+
+a {
+	color: #359bed;
+	font-weight: bold;
+}
+
+.tb { border:1px solid #ccc; border-spacing:0; border-collapse:collapse; }
+.tb th { border:1px solid #ccc; background-color:#eee; }
+.tb td { border:1px solid #ccc; }
+.tb caption { text-align:center; }
+
+table, table th, table td, table tr, table tbody {
+	border: solid #222 1px; 
+	border-collapse: collapse;
+}
+
+table caption {
+	border-bottom: solid #222 1px; 
+}
+
+EOS
+
+text=<<EOS
+[meta]
+title: FPGA IP Cores
+author: Takayuki Yuasa
+sectionNumbering: true
+[/meta]
+
+= FPGA IP Cores =
+[center]
+このページでは、SpaceWire FPGAボード関連のIPコアを集積していきます。
+自分でFPGA IPコアを作成するときは、なるべく機能を細分化してモジュールとして切り出し、資産の再利用性を高めましょう。
+[/center]
+
+== SpaceWire DIO Board | label ==
+line 1
+
+lllllllllllllllllll
+
+あああああああああああああああ
+いいいいいいいいいいいいいいい
+ううううううううううううううう
+
+=== subsection ===
+line 2
+[verbatim][http://iii.co.jp| III Corporation|style="color:red"][/verbatim]
+line 3
+[http://iii.co.jp| III Corporation|style="color:red"]
+
+=== Text formatting ===
+
+[verbatim]'''Strong'''[/verbatim] generates '''Strong'''.
+
+[verbatim]''Emphasis''[/verbatim] generates ''Emphasis''.
+
+[left][verbatim][left]...[/left][/verbatim] generates left-justified text.[/left]
+
+[right][verbatim][right]...[/right][/verbatim] generates right-justified text.[/right]
+
+[justify][verbatim][justify]...[/justify][/verbatim] justifies long text by extending/shrinking spacings between phrases. This is an exmaple of justified text. This is an exmaple of justified text. This is an exmaple of justified text. This is an exmaple of justified text. This is an exmaple of justified text. This is an exmaple of justified text. This is an exmaple of justified text.[/justify]
+
+[center][verbatim][center]...[/center][/verbatim] or [verbatim][centering]...[/centering][/verbatim] does centering of text.[/center]
+
+=== Table ===
+A table can be generated by using [verbatim][table]...[/table][/verbatim].
+
+A line of text corresponds to a row of the table.
+
+Vertial bar | is used as a separator of column values.
+
+Leading ! specifies the header row (the row will be treated as header, and will be displayed in a style different from that of other body rows).
+
+Caption and other options can be specified as a YAML snippet in a section enclosed with two (leading and trailing) [verbatim]--[/verbatim].
+
+[table]
+--
+caption: Caption of this table.
+align: ccc
+--
+! Column 1 | Column 2 | Column 3
+a | b | c
+a | b | c
+a | b | c
+[/table]
+
+=== Image ===
+An image can be pasted using [verbatim][image:...][/verbatim].
+
+A remote image file can be imported by providing its URL to image tag, e.g.: [verbatim][image:http://www.somewhere.com/image.png][/verbatim]
+
+A local image file can be also imported, e.g.: [verbatim][image:path/to/image.png][/verbatim]
+
+Size can be specified by putting something like 200px or 200x400px for width-only and width-and-height constraints, respectively.
+
+[center][image:http://ecx.images-amazon.com/images/I/41x%2BIhe%2BsBL._SL500_AA300_.jpg|200px][/center]
+
+=== HTML tags ===
+HTML tags can be used within NAME_OF_PROGRAM text, and output to a resulting HTML as they are.
+
+For example, a button tag, &lt;button type="button"&gt;Sample Button&lt;/button&gt;,  will generate a button like below.
+
+[center]<button type="button">Sample Button</button>[/center]
+EOS
+
+
+meta=<<EOS
+
+<link href='http://fonts.googleapis.com/css?family=Alegreya+Sans+SC:300,400' rel='stylesheet' type='text/css'>
+<link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+<link href="http://netdna.bootstrapcdn.com/bootswatch/3.1.1/readable/bootstrap.min.css" rel="stylesheet">
+<script src="http://code.jquery.com/jquery.js"></script>
+<script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+EOS
+
+rules=Converter.new
+rules << RuleVerbatim.new
+
+#rules that use bracket tags (other than image and link)
+rules << RuleTable.new
+rules << RuleTextAlign.new
+
+#other text style
+rules << RuleStrong.new
+rules << RuleEmphasis.new
+
+#image and link
+rules << RuleImage.new
+rules << RuleLinkToURL.new
+
+#itemize/enumerate
+rules << RuleItemize.new
+rules << RuleEnumerate.new
+
+#sections headings
+rules << RuleSectionHeader.new
+rules << RuleH1.new
+
+rules << RuleParagraph.new
+rules << RuleUnVerbatim.new
+rules << RuleEmptyParagraphRemover.new
+
+#main
+
+if(ARGV[0]!=nil)then
+	text=File.read(ARGV[0])
+end
+
+rules.setMetaInformation(text)
+rules.setMetaTag(meta)
+rules.setCSS(css)
+
+convertedText=rules.apply(text)
+
+puts rules.header("","")
+puts rules.containerStart()
+puts convertedText
+puts rules.containerEnd()
+puts rules.footer()
