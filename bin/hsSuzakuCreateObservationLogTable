@@ -9,6 +9,14 @@ if [ _$1 = _ ]; then
 	exit
 fi
 
+
+cat << EOF
+\\begin{tabular}{ccccccc}
+\\hline
+Observation ID & Date/Time & Exposure (ks) & Aim point & Count rate$^{*}$\\\\
+\\hline
+EOF
+
 for folder in $@; do
 if [ ! -d $folder ]; then
 	echo "Error: analysis folder $folder not found"
