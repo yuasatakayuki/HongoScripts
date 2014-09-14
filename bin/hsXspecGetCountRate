@@ -1,0 +1,77 @@
+#!/usr/bin/env zsh
+
+# Takayuki Yuasa 20140914
+
+if [ _$5 = _ ]; then
+	cat << EOF
+Provide:
+	1: source spectral file
+	2: background spectral file
+	3: response file
+	4: energy lower limit (e.g. 1.0)
+	5: energy upper limit (e.g. 10.0)
+	6: significant digits
+	7: (optional) value/err to select which number to be output
+EOF
+	exit
+fi
+
+sourcePIFile=$1
+bgdPIFile=$2
+responseFile=$3
+eLower=`ruby -e "puts '%.1f'%$4"`
+eUpper=`ruby -e "puts '%.1f'%$5"`
+significantDigits=2
+if [ _$6 != _ ]; then
+	significantDigits=$6
+fi
+option=""
+if [ _$7 = _ ]; then
+	option=$7
+fi
+
+countRateLine=`xspec << EOF | grep "Net count" | tail -1
+data $sourcePIFile
+backgrnd $bgdPIFile
+response $responseFile
+
+ignore 1:**-${eLower} ${eUpper}-**
+show file
+
+exit
+
+EOF`
+
+#countRateLine=
+#  Net count rate (cts/s) for Spectrum:1  5.422e+00 +/- 9.723e-03 (97.2 % total)
+
+
+if [ _$option = _ ]; then
+ruby << EOF
+line="$countRateLine"
+array=line.split(" ")
+puts "\$#{"%.${significantDigits}f"%array[-6].to_f}\\\\pm#{"%.${significantDigits}f"%array[-4].to_f}$"
+EOF
+else
+	if [ $option = error ]; then
+		ryby << EOF
+line="$countRateLine"
+array=line.split(" ")
+puts "#{"%.${significantDigits}f"%array[-4].to_f}"
+EOF
+		exit
+	fi
+	
+	if [ $option = value ]; then
+		ryby << EOF
+line="$countRateLine"
+array=line.split(" ")
+puts "#{"%.${significantDigits}f"%array[-6].to_f}"
+EOF
+		exit
+	fi
+	
+	#should not reach here
+	echo "Error: option should be either of 'value' or 'error'"
+	exit
+fi

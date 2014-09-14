@@ -1,0 +1,50 @@
+#!/usr/bin/env zsh
+
+#Takayuki Yuasa 20140914
+
+tag=cleanedevent
+
+if [ _$1 = _ ]; then
+	echo "Provide one ore more analysis folder path(s)"
+	exit
+fi
+
+for folder in $@; do
+if [ ! -d $folder ]; then
+	echo "Error: analysis folder $folder not found"
+	exit
+fi
+
+
+xisEventFile=$folder/analysis/xis/data/fi_evt.evt
+if [ ! -f $xisEventFile ]; then
+	echo "Error: xis event file not found"
+	echo "Please run this script after linking event files using hsSuzakuGoXISPointSource"
+	exit
+fi
+
+xisPIFile=$folder/analysis/xis/spectral_analysis/pis/$tag/fi_source_ra_dec_120.pi
+if [ ! -f $xisPIFile ]; then
+	echo "Error: XIS PI file not found"
+	echo "Please run this script after extracting cleaned event spectra using hsSuzakuGoXISPointSource or other tools"
+	exit
+fi
+
+
+obsid=`hsFitsGetObsID $xisEventFile`
+dateObs=`hsFitsGetDateObs $xisPIFile`
+exposure=`hsFitsGetExposure $xisPIFile`
+exposure_ks=`ruby -e "puts '%.1f'%($exposure/1000)"`
+
+#get count rate
+xisEnergyRangeLower=1.0
+xisEnergyRangeUpper=10.0
+xisCountRateTeX=`hsXspecGetCountRate $xisPIFile $folder/analysis/xis/spectral_analysis/bgds/${tag}/fi_bgd1.pi $folder/analysis/xis/spectral_analysis/responses/fi.rmf ${xisEnergyRangeLower} ${xisEnergyRangeUpper}`
+
+#get nominal point
+nomPnt=`hsFitsGetNomPnt $xisEventFile`
+
+cat << EOF
+${obsid} & ${dateObs} & ${exposure_ks} & ${nomPnt} & ${xisCountRateTeX} \\\\
+EOF
+done
