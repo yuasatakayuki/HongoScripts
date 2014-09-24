@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20140924
+
+if [ _$1 = _ ]; then
+	echo "Provide post script file"
+	exit
+fi
+
+psFileName=$1
+pdfFileName=`basename $1 .ps`.pdf
+dir=`dirname $psFileName`
+
+if [ ! -f $psFileName ]; then
+	echo "Error: ps file not found"
+	exit
+fi
+
+pushd $dir &> /dev/null
+	ps2pdf `basename $psFileName`
+	pdfcrop $pdfFileName $pdfFileName
+
+	if [ ! -f $pdfFileName ]; then
+		echo "Error: pdf creation failed"
+		exit
+	fi
+popd &> /dev/null
