@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20140929
+
+if [ _$2 = _ ]; then
+	echo "Provide MCA file, object name, and title (optional)"
+	exit
+fi
+
+file=$1
+name=$2
+
+if [ _$3 != _ ]; then
+	title=$3
+else
+	title=""
+fi
+
+temporaryFileName=`hsTemporaryFile`.c
+
+cat << EOF > ${temporaryFileName}
+TH1D* `basename $temporaryFileName .c`(std::string mcaFileName, std::string objectName, std::string title="histogram"){
+	cout << "Opening file" << endl;
+	std::ifstream ifs(mcaFileName.c_str());
+	if(!ifs.is_open()){
+		cerr << "Error: file not found" << endl;
+		return NULL;
+	}
+
+	TH1D* hist=new TH1D(objectName.c_str(),title.c_str(),4096,-0.5,4095.5);
+	
+	bool dataPart=false;
+	double count;
+	size_t ch=0;
+	const size_t nChannels=4096;
+	std::string header;
+	cout << "Reading header" << endl;
+	while(ifs.is_open() && !ifs.eof()){
+		if(dataPart){
+			ifs >> count;
+			hist->SetBinContent(hist->GetXaxis()->FindBin(ch),count);
+			ch++;
+			if(ch>nChannels){
+				break;
+			}else{
+				continue;
+			}
+		}
+		ifs >> header;
+		if(header=="<<DATA>>"){
+			dataPart=true;
+			cout << "Data part starts." << endl;
+		}
+	}
+	//TCanvas* c=new TCanvas("c","c",600,600);
+	//hist->Draw();
+
+	std::string rootFileName=mcaFileName+".root";
+	TFile file(rootFileName.c_str(), "recreate");
+	hist->Write();
+	file.Close();
+
+	return hist;
+} 
+EOF
+
+if [ ! -f $temporaryFileName ]; then
+	echo "Error: temporary file creation failed"
+	exit
+fi
+
+echo "Converting MCA file to ROOT Histogram"
+echo " Input file = $file"
+
+root -l << EOF > /dev/null
+.x $temporaryFileName("$file","$name","$title")
+EOF
+
+rootFile=${file}.root
+if [ ! -f ${file}.root ]; then
+	echo "Error: ROOT file creation failed"
+	rm -f $temporaryFileName
+	exit
+fi
+
+echo "Completed"
+echo " ROOT file = $rootFile created"
+
+rm -f $temporaryFileName
