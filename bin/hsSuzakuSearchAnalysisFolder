@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20141010
+
+#与えられたパスから、SuzakuAnalysisFolderを探索する。
+#見つかった場合は
+require 'pathname'
+
+$dumpDebugMessage=false
+
+def searchSuzakuAnalysisFolder(path)
+	path=File.expand_path(path)
+	begin
+		if($dumpDebugMessage)then
+			puts "Searching SuzakuAnalysisFolder at #{path}"
+		end
+		dataFolderExists=false
+		analysisFolderExists=false
+		summaryFolderExists=false
+		
+		begin
+			if(!FileTest::directory?(path))then
+				if($dumpDebugMessage)then
+					STDERR.puts "Error: not a folder #{path}"
+				end
+				return nil
+			end
+		rescue
+			if($dumpDebugMessage)then
+				STDERR.puts "Error: not a folder #{path}"
+			end
+			return nil
+		end
+				
+		Dir::entries(path).delete_if do |file| file =~ /^\./ end.each{ |e|
+			if(e=="analysis")then
+				analysisFolderExists=true
+			end
+			
+			if(e=="summary")then
+				summaryFolderExists=true
+			end
+			
+			if(e=="data")then
+				dataFolderExists=true
+			end
+		}
+	
+		if( dataFolderExists and analysisFolderExists and summaryFolderExists )then
+			if($dumpDebugMessage)then
+				puts "SuzakuAnalysisFolder = #{path}"
+			end
+			return path
+		else
+			#if the path is not a SuzakuAnalysisFolder, then move upwards.
+			path=Pathname.new(path).parent.to_s
+		end
+			
+	end while path.strip()!="/"
+	
+	if($dumpDebugMessage)then
+		STDERR.puts "Error: cannot find a SuzakuAnalysisFolder from the provided path #{path}"
+	end
+
+end
+
+path="."
+if(ARGV.length!=0)then
+	path=ARGV[0]
+end
+path=searchSuzakuAnalysisFolder(path)
+if(path!=nil)then
+	puts path
+end
