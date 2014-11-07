@@ -147,7 +147,7 @@ class Converter < Array
 	end
 
 	def setMetaInformation(text)
-		regExp=/[\[[m|M]eta\](.*?)\[\/[m|M]eta\]/mu
+		regExp=/\[[m|M]eta\](.*?)\[\/[m|M]eta\]/mu
 		text.match(regExp)
 		if(Regexp.last_match==nil or Regexp.last_match[1]==nil)then
 			return
@@ -214,7 +214,7 @@ end
 
 class RuleLinkToURL < Rule
 	def apply(text)
-		regExp=/\[[\[(.*?)\]\]/u
+		regExp=/\[\[(.*?)\]\]/u
 		while(text.match regExp)do
 			insideLinkBracket=Regexp.last_match[1]
 			array=splitWithBar(insideLinkBracket)
