@@ -147,7 +147,7 @@ class Converter < Array
 	end
 
 	def setMetaInformation(text)
-		regExp=/\[[m|M]eta\](.*?)\[\/[m|M]eta\]/mu
+		regExp=/[\[[m|M]eta\](.*?)\[\/[m|M]eta\]/mu
 		text.match(regExp)
 		if(Regexp.last_match==nil or Regexp.last_match[1]==nil)then
 			return
@@ -214,7 +214,7 @@ end
 
 class RuleLinkToURL < Rule
 	def apply(text)
-		regExp=/\[(.*?)\]/u
+		regExp=/\[[\[(.*?)\]\]/u
 		while(text.match regExp)do
 			insideLinkBracket=Regexp.last_match[1]
 			array=splitWithBar(insideLinkBracket)
@@ -254,7 +254,7 @@ class RuleImage < Rule
 		@alt=""
 	end
 	def apply(text)
-		regExp=/\[[iI]mage:(.*?)\]/u
+		regExp=/\[\[[iI]mage:(.*?)\]\]/u
 		while(text.match regExp)do
 			insideLinkBracket=Regexp.last_match[1]
 			array=splitWithBar(insideLinkBracket)
@@ -1209,15 +1209,15 @@ a | b | c
 [/table]
 
 === Image ===
-An image can be pasted using [verbatim][image:...][/verbatim].
+An image can be pasted using [verbatim][[image:...]][/verbatim].
 
-A remote image file can be imported by providing its URL to image tag, e.g.: [verbatim][image:http://www.somewhere.com/image.png][/verbatim]
+A remote image file can be imported by providing its URL to image tag, e.g.: [verbatim][[image:http://www.somewhere.com/image.png]][/verbatim]
 
-A local image file can be also imported, e.g.: [verbatim][image:path/to/image.png][/verbatim]
+A local image file can be also imported, e.g.: [verbatim][[image:path/to/image.png]][/verbatim]
 
 Size can be specified by putting something like 200px or 200x400px for width-only and width-and-height constraints, respectively.
 
-[center][image:http://ecx.images-amazon.com/images/I/41x%2BIhe%2BsBL._SL500_AA300_.jpg|200px][/center]
+[center][[image:http://ecx.images-amazon.com/images/I/41x%2BIhe%2BsBL._SL500_AA300_.jpg|200px]][/center]
 
 === HTML tags ===
 HTML tags can be used within NAME_OF_PROGRAM text, and output to a resulting HTML as they are.
