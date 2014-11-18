@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20141118
+
+if(ARGV.length<3)then
+	puts <<EOS
+Provide:
+	1: ChannelMap CALDB
+	2: ASIC_ID_REMAPPED (0-39)
+	3: READOUT_ID (0-31)
+EOS
+	exit
+end
+
+require "RubyFits"
+channelMapCALDB=ARGV[0]
+if(!File.exist?(channelMapCALDB))then
+	STDERR.puts "Error: ChannelMap CALDB file not found"
+	exit
+end
+
+asicID=ARGV[1].to_i
+readoutID=ARGV[2].to_i
+
+puts "Searching ASIC_ID_RMAP %d  READOUT_ID %d" % [asicID, readoutID]
+
+file=Fits::FitsFile.new(channelMapCALDB)
+hdu=file[1]
+for i in 0..(hdu.getNRows)
+	if(hdu["ASIC_ID_RMAP"][i].to_i==asicID and hdu["READOUT_ID"][i].to_i==readoutID)then
+		puts "ASIC_ID_RMAP %d (ASIC_ID 0x%x)  READOUT_ID %d  => READOUT_ID_REMAPPED %d" % [hdu["ASIC_ID_RMAP"][i], hdu["ASIC_ID"][i], hdu["READOUT_ID"][i], hdu["READOUT_ID_RMAP"][i]]
+		exit
+	end
+end
+
+puts "Not found"
