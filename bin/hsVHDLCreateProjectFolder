@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20150123
+
+if [ _$1 = _ ]; then
+	echo "Provide project folder name"
+	exit
+fi
+
+projectName=$1
+
+mkdir projectName
+for subdir in ISE BIT_MCS Datasheet VHDL UCF Circuit Documents; do
+	mkdir -p $projectName/$subdir
+done
+
+mkdir $projectName/ISE/ipcore_dir
