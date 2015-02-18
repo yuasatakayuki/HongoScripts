@@ -351,6 +351,10 @@ def processMetaCommandSet(array)
 
 	if(variableName=="sectionCounter")then
 		$sectionCounter=value.to_i
+	elsif(variableName=="subsectionCounter")then
+		$subsectionCounter=value.to_i
+	elsif(variableName=="subsubsectionCounter")then
+		$subsubsectionCounter=value.to_i
 	elsif(variableName=="generateCheckSheetTable")then
 		if(value.to_s=="true" or value.to_s=="yes")then
 			#STDERR.puts "CheckSheet generation is turned on."
