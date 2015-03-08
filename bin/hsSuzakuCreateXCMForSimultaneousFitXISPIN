@@ -22,9 +22,14 @@ back 1 spec_xis/bgds/cleanedevent/fi_bgd1.pi
 resp 1 spec_xis/responses/fi.rmf 
 arf 1 spec_xis/arfs/fi_source_ra_dec_120.arf
 
-data 2:2 spec_pin/pis/cleanedevent/pin_evt_dtcor_bin20.pi 
-back 2 spec_pin/nxbs/cleanedevent/pin_nxb_times10.pi 
-resp 2 spec_pin/responses/${pinResponseFile}
+data 2:2 spec_xis/pis/cleanedevent/bi_source_ra_dec_120_bin20.pi 
+back 2 spec_xis/bgds/cleanedevent/bi_bgd1.pi
+resp 2 spec_xis/responses/bi.rmf 
+arf 2 spec_xis/arfs/bi_source_ra_dec_120.arf
+
+data 3:3 spec_pin/pis/cleanedevent/pin_evt_dtcor_bin20.pi 
+back 3 spec_pin/nxbs/cleanedevent/pin_nxb_times10.pi 
+resp 3 spec_pin/responses/${pinResponseFile}
 
 setp rebin 10,10,1
 setp rebin 10,10,2
