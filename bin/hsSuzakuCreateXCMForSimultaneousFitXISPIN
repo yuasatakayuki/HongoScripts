@@ -1,0 +1,34 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20150308
+
+rootDir=`hsSuzakuSearchAnalysisFolder`
+
+pinResponseFolder=${rootDir}/analysis/simultaneous/spec_pin/responses
+echo $pinResponseFolder
+pinResponseFile=`ls $pinResponseFolder 2> /dev/null | tail -1`
+
+if [ _$pinResponseFile = _ ]; then
+	echo "Input pin response file:"
+	pinResponseFile=`read`
+	pinResponseFile=`basename $pinResponseFile`
+else
+	pinResponseFile=`basename $pinResponseFile`
+fi
+
+cat << EOF
+data 1:1 spec_xis/pis/cleanedevent/fi_source_ra_dec_120_bin20.pi 
+back 1 spec_xis/bgds/cleanedevent/fi_bgd1.pi
+resp 1 spec_xis/responses/fi.rmf 
+arf 1 spec_xis/arfs/fi_source_ra_dec_120.arf
+
+data 2:2 spec_pin/pis/cleanedevent/pin_evt_dtcor_bin20.pi 
+back 2 spec_pin/nxbs/cleanedevent/pin_nxb_times10.pi 
+resp 2 spec_pin/responses/${pinResponseFile}
+
+setp rebin 10,10,1
+setp rebin 10,10,2
+
+ignore 1:**-1. 11.-**
+ignore 2:**-17. 50.-**
+EOF
