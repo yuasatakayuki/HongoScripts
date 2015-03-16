@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150316
+
+if(ARGV.length<1)then
+	puts "Provide x xerr y yerr. Output is x/y and x/y*((xerr/x)^2+(yerr/y)^2)^0.5"
+	exit
+end
+
+x=ARGV[0].to_f
+xerr=ARGV[1].to_f
+y=ARGV[2].to_f
+yerr=ARGV[3].to_f
+
+puts <<EOS
+#{x/y} #{x/y*((xerr/x)**2+(yerr/y)**2)**0.5}
+EOS
