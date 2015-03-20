@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150320
+
+require "uri"
+require "mechanize"
+require "optparse"
+
+if(ARGV.length<1)then
+	puts "Provide URL to be retrieved and from which links should be extracted."
+	puts "--wget or -w option will dump wget before the extracted url."
+	exit
+end
+
+#process arguments
+args=ARGV.dup
+options={}
+if(args.count("--wget")!=0 or args.count("-w")!=0)then
+	options["wget"]=true
+else
+	options["wget"]=false
+end
+
+args.delete("--wget")
+args.delete("-w")
+
+#extract url from the arguments
+url=args[0]
+$protocol=url.split("://")[0]
+$host=url.split("://")[1].split("/")[0]
+
+#convert a relative URL to an absolute URL
+def convertAbsoluteURL(url)
+	if(url==nil or (url.instance_of?(String) and url.length==0))then
+		return url
+	end
+
+	url=URI.escape(url)
+
+	if(url[0]=="/")then
+		return $protocol+"://"+$host+url
+	else
+		return url
+	end
+end
+
+#main routine
+agent=Mechanize.new
+page=agent.get(url)
+page.links.each(){|link| 
+	if(options["wget"])then
+		puts "wget \"#{convertAbsoluteURL(link.href)}\""
+	else
+		puts convertAbsoluteURL(link.href)
+	end
+}
