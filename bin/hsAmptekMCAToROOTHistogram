@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150320
+
+require "RubyROOT"
+include Root
+
+if(ARGV.length<1 or !File.exist?(ARGV[0]))then
+	puts "Provide Amptek MCA file."
+	exit
+end
+
+mcaFile=ARGV[0]
+hist=TH1D.create("hist","Histogram",4096,0,4096)
+dataStarted=false
+i=0.5
+open(mcaFile).each(){|line|
+	if(dataStarted)then
+		hist.SetBinContent(hist.GetXaxis().FindBin(i),line.to_i)
+		i+=1
+	end
+	if(!dataStarted and line.include?("<<DATA>>"))then
+		dataStarted=true
+	end
+}
+
+rootFile=TFile.create(mcaFile.gsub(".mca",".root"), "recreate")
+hist.Write()
+rootFile.Close()
+
+
