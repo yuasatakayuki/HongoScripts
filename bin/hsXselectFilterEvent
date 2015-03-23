@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20150323
+
+if [ _$4 = _ ]; then
+	cat << EOF
+Provide:
+	1: event file name
+	2: filter type (region, gti, phase, pha)
+	3: filter file (region file, gti file, etc) or phase range
+	4: output file name
+EOF
+	exit
+fi
+
+eventFile=$1
+type=$2
+option=$3
+outputFile=$4
+
+if [ ! -f $eventFile ]; then
+	echo "Error: event file not found ($eventFile)"
+	exit
+fi
+
+# interpret type
+if [ $type = "region" ]; then
+	type=region
+elif [ $type = "gti" ]; then
+	type="time file"
+elif [ $type = "phase" ]; then
+	type="phase"
+elif [ $type = "pha" ]; then
+	type="pha_cut"
+fi
+
+# remove before process
+if [ -f ${outputFile} ]; then
+	rm -f ${outputFile}
+fi
+
+# do processing
+xselect << EOF
+
+read event $eventFile .
+filter $type $option
+extract event
+
+save event ${outputFile}
+n
+
+quit
+n
+EOF
