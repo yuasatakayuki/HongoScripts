@@ -15,6 +15,7 @@ $sectionCounter=0
 #  @@ set sectionCounter 5
 #  in the source file.
 $subsectionCounter=1
+$subsubsectionCounter=1
 $lineNumber=1
 $stopper=" "
 $processingBlockOfCheckCommands=false
@@ -118,7 +119,8 @@ end
 
 def processSectionHeader(line)
 	$sectionCounter=$sectionCounter+1
-	$subsectionCounter=1
+	$subsectionCounter=0
+	$subsubsectionCounter=0
 	sectionNumber = "#{$sectionCounter}."
 	title=stripLeadingAndTrailingEquals(line)
 	dump $sectionSeparator
@@ -127,12 +129,22 @@ def processSectionHeader(line)
 end
 
 def processSubsectionHeader(line)
+	$subsectionCounter=$subsectionCounter+1
+	$subsubsectionCounter=0
 	sectionNumber = "#{$sectionCounter}.#{$subsectionCounter}."
 	title=stripLeadingAndTrailingEquals(line)
 	dump $subsectionSeparator
 	dumpWithComma "# #{sectionNumber} #{title}"
 	dump $subsectionSeparator
-	$subsectionCounter=$subsectionCounter+1
+end
+
+def processSubsubsectionHeader(line)
+	$subsubsectionCounter=$subsubsectionCounter+1
+	sectionNumber = "#{$sectionCounter}.#{$subsectionCounter}.#{$subsubsectionCounter}."
+	title=stripLeadingAndTrailingEquals(line)
+	dump $subsectionSeparator
+	dumpWithComma "# #{sectionNumber} #{title}"
+	dump $subsectionSeparator
 end
 
 def processComment(line)
@@ -299,6 +311,9 @@ def processLine(lineString)
 	elsif(line.include?("@@"))then
 		dumpBlockOfCheckCommands()
 		processMetaCommand(line)
+	elsif(line.include?("===="))then
+		dumpBlockOfCheckCommands()
+		processSubsubsectionHeader(line)
 	elsif(line.include?("==="))then
 		dumpBlockOfCheckCommands()
 		processSubsectionHeader(line)
