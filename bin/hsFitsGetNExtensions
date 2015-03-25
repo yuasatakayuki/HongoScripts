@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150325
+
+if(ARGV.length<1)then
+	puts "Provide FITS file."
+	exit
+end
+
+fitsFile=ARGV[0]
+
+require "RubyFits"
+include Fits
+
+fits=FitsFile.new(fitsFile)
+
+puts fits.length
+
