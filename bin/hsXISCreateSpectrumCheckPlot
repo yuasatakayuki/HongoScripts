@@ -100,13 +100,13 @@ export PGPLOT_TYPE=""
 hsXISCreateXCMForAnalysisTag $evtfile $nxbfile $cxbfile $bgdfile $rmf $arf $xcm
 
 exposure=`hsGetFitsExposure $evtfile`
-exposure=`calc $exposure/1000`ks
+exposure=`ruby -e "\"%.1f\"%($exposure/1000.0)"` ks
 
 cat << EOF >> $xcm
 
 iplot
-cs 1.3
-fo ro
+cs 1.2
+view 0.1 0.1 0.7 0.9
 ti of
 la t
 la f $title / $exposure
