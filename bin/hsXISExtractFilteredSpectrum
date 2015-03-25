@@ -60,8 +60,6 @@ EOF
 #binning
 cd $outputdir
 hsFitsGroupSpectrumMinimumCounts "$outputfile" 20 | tee -a `basename $logfile`
-hsFitsGroupSpectrumMinimumCounts "$outputfile" 40 | tee -a `basename $logfile`
-hsFitsGroupSpectrumMinimumCounts "$outputfile" 60 | tee -a `basename $logfile`
 hsFitsGroupSpectrumMinimumCounts "$outputfile" 80 | tee -a `basename $logfile`
 cd - &> /dev/null
 
