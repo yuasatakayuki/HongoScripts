@@ -28,7 +28,7 @@ file=Fits::FitsFile.new(channelMapCALDB)
 hdu=file[1]
 for i in 0..(hdu.getNRows)
 	if(hdu["ASIC_ID_RMAP"][i].to_i==asicID and hdu["READOUT_ID"][i].to_i==readoutID)then
-		puts "ASIC_ID_RMAP %d (ASIC_ID 0x%x)  READOUT_ID %d  => READOUT_ID_REMAPPED %d" % [hdu["ASIC_ID_RMAP"][i], hdu["ASIC_ID"][i], hdu["READOUT_ID"][i], hdu["READOUT_ID_RMAP"][i]]
+		puts "ASIC_ID_RMAP %d (ASIC_ID 0x%x)  READOUT_ID %d  => READOUT_ID_REMAPPED %d  LAYER %d  ASIC_INDEX %d" % [hdu["ASIC_ID_RMAP"][i], hdu["ASIC_ID"][i], hdu["READOUT_ID"][i], hdu["READOUT_ID_RMAP"][i], hdu["LAYER"][i], hdu["ASIC_INDEX"][i]]
 		exit
 	end
 end
