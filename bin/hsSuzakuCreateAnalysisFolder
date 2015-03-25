@@ -63,6 +63,7 @@ mkdir ${targetname}/${analysisfolder}/$det/lightcurve_analysis/logs
 mkdir ${targetname}/${analysisfolder}/$det/lightcurve_analysis/scripts
 mkdir ${targetname}/${analysisfolder}/$det/lightcurve_analysis/analysis
 mkdir ${targetname}/${analysisfolder}/$det/lightcurve_analysis/extraconditions
+mkdir ${targetname}/${analysisfolder}/$det/lightcurve_analysis/periodicity
 mkdir ${targetname}/${analysisfolder}/$det/lightcurve_analysis/powerspectra
 mkdir ${targetname}/${analysisfolder}/$det/lightcurve_analysis/folded_lcfiles
 if [ -d ${targetname}/${analysisfolder}/$det/lightcurve_analysis ];
