@@ -184,7 +184,9 @@ Target Analysis Folder : ${ip}
  [502] List Lightcurve Plots
  [503] Display Lightcurve Plot
  [510] Calculate Power Spectrum
+ [511] Display Power Spectrum
  [520] Search Periodicity
+ [521] Display Periodicity
  [530] Fold Lightcurve
  
  --Eventfile-related process--
@@ -699,11 +701,19 @@ extract_spectra(){
 	cd $ip/${analysisfolder}/xis/spectral_analysis/
 	for xis in xis0 xis1 xis2 xis3 fi bi;
 	do
-		if [ -f ../data/${xis}_evt.evt ];
+		eventFile=../data/${xis}_evt.evt
+		sourcePIFile=pis/$tag/${xis}_`basename ${source_regionfile} .reg`.pi
+		bgdPIFile=bgds/$tag/${xis}_`basename ${bgd_regionfile} .reg`.pi
+		if [ -f ${eventFile} ];
 		then
-			hsXISExtractFilteredSpectrum ../data/${xis}_evt.evt pis/$tag/${xis}_`basename ${source_regionfile} .reg`.pi ../image_analysis/regions/${source_regionfile} ${extraconditionfile}
-			hsXISExtractFilteredSpectrum ../data/${xis}_evt.evt bgds/$tag/${xis}_`basename ${bgd_regionfile} .reg`.pi ../image_analysis/regions/${bgd_regionfile} ${extraconditionfile}
+			hsXISExtractFilteredSpectrum ${eventFile} ${sourcePIFile} ../image_analysis/regions/${source_regionfile} ${extraconditionfile}
+			hsXISExtractFilteredSpectrum ${eventFile} ${bgdPIFile} ../image_analysis/regions/${bgd_regionfile} ${extraconditionfile}
 		fi
+		
+		arfFile=arfs/${xis}_`basename ${source_regionfile} .reg`.arf
+
+		hsXISCreateXCMForAnalysisTag ${sourcePIFile} none none ${bgdPIFile} responses/${xis}.rmf ${arfFile}
+
 	done
 	cd - &> /dev/null
 	function_completed
@@ -1114,6 +1124,106 @@ display_powerspectrum(){
 	confirm
 }
 
+###
+#search_periodicity
+##################################
+search_periodicity(){
+	functionname="search_periodicity"
+	function_start
+	
+	dir=$ip/${analysisfolder}/xis/lightcurve_analysis/periodicity
+
+	#check folder existence
+	if [ ! -d $dir ]; then
+		mkdir -p $dir
+	fi
+	if [ ! -d $dir ]; then
+		echo "Error: $dir not found"
+		exit
+	fi
+
+	pushd $dir &> /dev/null
+	read -p "Period (sec) > " period
+	read -p "Number of bins per phase > " nBinsPerPhase
+	read -p "Search resolution (sec) > " resolutionInSec
+	read -p "Covered semi-range (sec) > " rangeInSec
+	nper=`calc "${rangeInSec}/$resolutionInSec*2"`
+	echo ""
+	echo "nper =  $nper"
+	echo ""
+	echo "Starting efsearch..."
+	sleep 2
+
+	eventFile=../../data/fi_evt_src.evt
+
+	if [ ! -f ${eventFile} ]; then
+		echo "Error: Run '[610] Extract Source/BGD Event File' before this task."
+		function_completed
+		confirm
+		return
+	fi
+
+	fesFile=`basename ${eventFile} .evt`_periodicity.fes
+	psFile=`basename ${fesFile} .fes`_period_${period}s
+	psFile=`hsQDPSanitizeFilename $psFile`.ps
+	pdfFile=`basename ${psFile} .ps`.pdf
+	efsearch cfile1=$eventFile window=- sepoch=INDEF nbint=INDEF \
+		 dper=${period} nphase=${nBinsPerPhase} dres=${resolutionInSec} nper=${nper} \
+		 outfile=${fesFile} plot=yes clobber=yes plotdev=/null << EOF
+lw 3 on 1..10
+lw 3
+view 0.1 0.1 0.7 0.9
+la 1 vp 0.4 0.03 cs 0.7
+la 2 vp 0.7 0.93
+la 3 vp 0.4 0.87
+la 4 vp 0.4 0.84
+pl
+cps /ps
+hard ${psFile}/ps
+quit
+EOF
+	if [ -f ${psFile} ]; then
+		ps2pdf ${psFile}
+		rm -f ${psFile}
+		pdfcrop ${pdfFile} ${pdfFile}
+		echo ""
+		echo "PDF file has been created:"
+		fullpath ${pdfFile}
+	fi
+
+	function_completed
+	confirm
+}
+
+##################################
+#display_periodicity
+##################################
+display_periodicity(){
+	functionname="display_periodicity"
+	function_start
+	pushd $ip/${analysisfolder}/xis/lightcurve_analysis/periodicity &> /dev/null
+
+	checkFileExistence=`ls *pdf 2> /dev/null | tail -1`
+	if [ _$checkFileExistence = _ ]; then
+		echo "No periodicity PDF has been created."
+		popd &> /dev/null
+		function_completed
+		confirm
+		return
+	fi
+
+	echo "Periodicity PDF files:"
+	ls -1 *pdf
+
+	echo ""
+	read -p "Select a PDF to be displayed > " pdfFile
+	${HS_PDF_VIEWER} ${pdfFile}
+
+	popd &> /dev/null
+	function_completed
+	confirm
+}
+
 ##################################
 #barycentric_correction
 ##################################
@@ -1246,6 +1356,7 @@ do
 		510) calculate_powerspectrum ;;
 		511) display_powerspectrum ;;
 		520) search_periodicity ;;
+		521) display_periodicity ;;
 		530) fold_lightcurve ;;
 		600) barycentric_correction ;;
 		610) extract_src_bgd_event_files ;;
