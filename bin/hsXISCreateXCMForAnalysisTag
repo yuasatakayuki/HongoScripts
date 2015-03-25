@@ -60,7 +60,6 @@ arf #{arfarray.join(' ')}
 
 setplot energy
 ignore 1-30:**-0.5 10.-**
-setplot rebin 10,10
 
 plot ldata
 
