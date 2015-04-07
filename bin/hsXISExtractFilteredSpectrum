@@ -58,8 +58,10 @@ exit
 EOF
 
 #binning
+yesOrNo=`ruby -e "if('$regionfile'.include?('bgd1'))then puts 'yes'; else puts 'no'; end"`
+if [ _$yesOrNo = _no ]; then
 cd $outputdir
 hsFitsGroupSpectrumMinimumCounts "$outputfile" 20 | tee -a `basename $logfile`
 hsFitsGroupSpectrumMinimumCounts "$outputfile" 80 | tee -a `basename $logfile`
 cd - &> /dev/null
-
+fi
