@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150417
+
+if(ARGV.length<1)then
+	puts "Provide exposure in sec."
+	exit
+end
+
+timeInSec=ARGV[0].to_f
+
+if(timeInSec<1)
+	time=timeInSec*1000
+	unit="ms"
+	format="%.2f"
+elsif(timeInSec<10000)
+	time=timeInSec
+	unit="s"
+	if(timeInSec.to_i==timeInSec)
+		format="%d"
+	else
+		format="%.2f"
+	end
+else
+	time=timeInSec/1000.0
+	unit="ks"
+	if(time.round==time)
+		format="%d"
+	else
+		format="%.2f"
+	end
+end	
+
+
+puts  "#{format} #{unit}" % time
