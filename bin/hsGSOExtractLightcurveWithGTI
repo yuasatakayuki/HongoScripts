@@ -107,6 +107,7 @@ $condition
 extract event
 set binsize $binsize
 extract curve exposure=0.0
+cpd /null
 plot curve
 ti off
 cs 1.3
