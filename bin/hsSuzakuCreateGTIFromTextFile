@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150417
+
+if(ARGV.length<2)then
+	puts "Provide:"
+	puts "   1: a text GTI file of which every row lists START and STOP times."
+	puts "   2: output GTI FITS file name."
+	exit -1
+end
+
+inputFile=ARGV[0]
+outputFile=ARGV[1]
+if(!File.exist?(inputFile))then
+	STDERR.puts "Error: input file #{inputFile} not found"
+	exit -1
+end
+
+require "RubyFits"
+
+templateString=<<EOS
+XTENSION=BINTABLE
+EXTNAME=STDGTI
+TFORM#=1D
+TTYPE#=START
+TFORM#=1D
+TTYPE#=STOP
+
+MJDREF  = 5.154400074287037E+04 / Reference date
+TIMEZERO=                  0.0 / offset to be applied to times given in the data
+HDUCLASS= 'OGIP    '           / format conforms to OGIP/GSFC standards
+HDUCLAS1= 'GTI     '           / Extension contains Good Time Intervals
+HDUCLAS2= 'ALL     '
+
+COMMENT This GTI file created on #{Time.now}.
+COMMENT The original text file is #{File.expand_path(inputFile)}.
+EOS
+
+fitsFile=Fits::FitsFile.constructFromTemplateString(templateString)
+hdu=fitsFile[1]
+
+array=[]
+nRows=File.read(inputFile).count("\n")
+hdu.resize(nRows)
+open(inputFile).each_with_index(){|line,i|
+		a=line.split(/\s/)
+        hdu["START"][i]=a[0]
+        hdu["STOP"][i]=a[1]
+}
+
+fitsFile.saveToFile(outputFile)
