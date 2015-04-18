@@ -5,30 +5,43 @@
 
 if(ARGV.length<3)then
 puts <<EOS
-hsXspecGetParameterFromLogFile (log file) (model component number) (parameter name) (errp/errm/value_errp_errm/value/errP/errM/value_errM_errP;optional) (ruby style format;optional)
+Provide:
+  1: Xspec log file (containing "show all" and "error N" results)
+  2: model component number
+  3: parameter name
+  4: type (value/errp/errm/value_errp_errm/errP/errM/value_errM_errP; optional; default = value)
+  5: ruby style number format (e.g. "%.2f"; optional)
+  6: output style; optional (only effective for value_errM_errP; "tex" = default / "gnuplot")
 EOS
 exit
 end
 
 logfile=ARGV[0]
 if(!File.exist?(logfile))then
-puts "File not found..."
-exit
+  puts "File not found..."
+  exit
 end
 
 ncomp=ARGV[1].to_i
 pname=ARGV[2]
 err="value"
 if(ARGV[3]!=nil)then
-err=ARGV[3]
+  err=ARGV[3]
 end
 
 format="%s"
 format_plus="%s"
 if(ARGV[4]!=nil)then
-format=ARGV[4]
-format_plus=format.gsub("%","%+")
-format_plus=format_plus.gsub("%++","%+")
+  format=ARGV[4]
+  format_plus=format.gsub("%","%+")
+  format_plus=format_plus.gsub("%++","%+")
+end
+
+outputStyle="tex"
+if(ARGV[5]!=nil)then
+  if(ARGV[5]=="gnuplot")then
+    outputStyle="gnuplot"
+  end
 end
 
 npara=0
@@ -56,8 +69,8 @@ open(logfile).each{|line|
 }
 
 if(err=="value")then
-puts format % paravalue
-exit
+  puts format % paravalue
+  exit
 end
 
 blocks={}
@@ -83,11 +96,15 @@ end
 block=blocks[npara]
 if(block!=nil)then
 block.each{|line|
- line=line.gsub("#"," ")
- line=line.gsub(","," ")
- line=line.gsub(")"," ")
- line=line.gsub("("," ")
- a=line.split(" ")
+  line=line.gsub("#"," ")
+  line=line.gsub(","," ")
+  line=line.gsub(")"," ")
+  line=line.gsub("("," ")
+  a=line.split(" ")
+
+  #a[-1] = errp
+  #a[-2] = errm
+
  #puts line
  if(a[0].to_i==npara)then
   if(err=="errp")then
@@ -97,7 +114,7 @@ block.each{|line|
    puts format % a[-2]
    exit
   elsif(err=="value_errp_errm")then
-   puts "$#{format % paravalue}^{#{format_plus % a[-1]}}_{#{format % a[-2]}}$"
+    puts "$#{format % paravalue}^{#{format_plus % a[-1]}}_{#{format % a[-2]}}$"
   elsif(err=="errP")then
    if(a[-3]!=nil)then
     puts format % a[-3]
@@ -108,7 +125,11 @@ block.each{|line|
    end
   elsif(err=="value_errM_errP")then
    if(a[-4]!=nil and a[-3]!=nil)then
-    puts "#{format % paravalue}(#{(format_plus % a[-4]).gsub("+","")}-#{(format % a[-3]).gsub("+","")})"
+    if(outputStyle=="tex")then
+      puts "#{format % paravalue}(#{(format_plus % a[-4]).gsub("+","")}-#{(format % a[-3]).gsub("+","")})"
+    elsif(outputStyle=="gnuplot")then
+      puts "#{format % paravalue} #{(format_plus % a[-4]).gsub("+","")} #{(format % a[-3]).gsub("+","")}"
+    end
    end
   end
  end
