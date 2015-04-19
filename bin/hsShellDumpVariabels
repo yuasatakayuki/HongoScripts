@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150418
+
+if(ARGV.length<1)then
+	puts "Provide a file that contains something like:"
+	puts <<EOS
+Provide something like below via STDIN:
+---------------------------------------------
+logFile=fittings/intervals_${modelTag}.log
+outputXCMFile=fittings/intervals_${modelTag}.xcm
+outputGnuplotDataFile=fittings/intervals_${modelTag}_PhoIndex.data
+outputPSFile=`dirname $outputGnuplotDataFile`/`basename $outputGnuplotDataFile .data`.ps
+outputPDFFile=`dirname $outputGnuplotDataFile`/`basename $outputGnuplotDataFile .data`.pdf
+---------------------------------------------
+
+This script will output something like:
+
+EOS
+	exit
+end
+
+open(ARGV[0]).each(){|line|
+	variableName=line.split("=")[0].strip
+	variableName_original=variableName
+	variableName=variableName[0].capitalize+variableName[1..-1]
+	variableName=variableName.gsub(/([A-Z]+)/,'_\1').gsub(/File$/,"_File")
+
+	puts "#{variableName.split("_").join(" ").gsub("  "," ").strip} = \$#{variableName_original}"
+}
