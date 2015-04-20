@@ -7,7 +7,7 @@ if(ARGV.length<3)then
 puts <<EOS
 Provide:
   1: Xspec log file (containing "show all" and "error N" results)
-  2: model component number
+  2: model component number (or 'data group number':'model number' if multiple data groups)
   3: parameter name
   4: type (value/errp/errm/value_errp_errm/errP/errM/value_errM_errP; optional; default = value)
   5: ruby style number format (e.g. "%.2f"; optional)
@@ -16,17 +16,27 @@ EOS
 exit
 end
 
-logfile=ARGV[0]
-if(!File.exist?(logfile))then
-  puts "File not found..."
-  exit
+##############################################
+# process arguments
+##############################################
+logFile=ARGV[0]
+if(!File.exist?(logFile))then
+  STDERR.puts "Error: log file not found"
+  exit -1
 end
 
-ncomp=ARGV[1].to_i
+dataGroupIndex=1
+if(ARGV[1].include?(":"))then
+  dataGroupIndex=ARGV[1].split(":")[0].to_i
+  ncomp=ARGV[1].split(":")[1].to_i
+else
+  ncomp=ARGV[1].to_i
+end
+
 pname=ARGV[2]
-err="value"
+type="value"
 if(ARGV[3]!=nil)then
-  err=ARGV[3]
+  type=ARGV[3]
 end
 
 format="%s"
@@ -44,94 +54,271 @@ if(ARGV[5]!=nil)then
   end
 end
 
+modelComponentNumber=ncomp
+parameterName=pname
+
+##############################################
+# declare variables
+##############################################
 npara=0
 paravalue=0
 
-lines=[]
-errorcommands=[]
 
-i=0
-open(logfile).each{|line|
- line=line.gsub("#","")
- a=line.split(" ")
- if(a[1]!=nil and a[3]!=nil)then
-	 if(npara==0 and a[1].to_i==ncomp and a[3]==pname)then
-	  npara=a[0].to_i
-	  paravalue=a[-3]
-	  #puts "Nparameter=#{npara}"
-	 end
- end
- if(line.include?("XSPEC") and line.include?(">") and line.include?("err") and !line.include?("eqw"))then
-  errorcommands.push(i)
- end
- i=i+1
- lines.push(line)
-}
 
-if(err=="value")then
-  puts format % paravalue
-  exit
-end
+##############################################
+#parse log file
+##############################################
 
-blocks={}
-for i in 0...errorcommands.length do
- from=errorcommands[i]
- to=from
- if(errorcommands[i+1]!=nil)then
-  to=errorcommands[i+1]
- else
-  to=lines.length-1
- end
- errcommand=lines[errorcommands[i]]
- a=errcommand.split(" ")
- for p in 1...a.length do
-	 nerrpara=a[p].to_i
-	 if(nerrpara!=0)then
-		 #puts nerrpara
-		 blocks[nerrpara]=lines[from..to]
-	 end
- end
-end
-
-block=blocks[npara]
-if(block!=nil)then
-block.each{|line|
-  line=line.gsub("#"," ")
-  line=line.gsub(","," ")
-  line=line.gsub(")"," ")
-  line=line.gsub("("," ")
-  a=line.split(" ")
-
-  #a[-1] = errp
-  #a[-2] = errm
-
- #puts line
- if(a[0].to_i==npara)then
-  if(err=="errp")then
-   puts format % a[-1]
-   exit
-  elsif(err=="errm")then
-   puts format % a[-2]
-   exit
-  elsif(err=="value_errp_errm")then
-    puts "$#{format % paravalue}^{#{format_plus % a[-1]}}_{#{format % a[-2]}}$"
-  elsif(err=="errP")then
-   if(a[-3]!=nil)then
-    puts format % a[-3]
-   end
-  elsif(err=="errM")then
-   if(a[-4]!=nil)then
-    puts format % a[-4]
-   end
-  elsif(err=="value_errM_errP")then
-   if(a[-4]!=nil and a[-3]!=nil)then
-    if(outputStyle=="tex")then
-      puts "#{format % paravalue}(#{(format_plus % a[-4]).gsub("+","")}-#{(format % a[-3]).gsub("+","")})"
-    elsif(outputStyle=="gnuplot")then
-      puts "#{format % paravalue} #{(format_plus % a[-4]).gsub("+","")} #{(format % a[-3]).gsub("+","")}"
-    end
-   end
+class ModelComponentFitResult
+  attr_accessor :modelComponentNumber, :modelName, :values
+  
+  def initialize
+    @modelComponentNumber=0
+    @modelName=""
+    @values={} # map parameterName => [parameterNumber, value]
   end
- end
-}
+
+  def to_s
+    str=[]
+    str << " Component #{@modelComponentNumber}: #{modelName}"
+    @values.each(){|parameterName, array|
+      str << "  #{array[0]} #{parameterName} = #{array[1]}"
+    }
+    return str.join("\n")
+  end
+
+  def getBestFitValue(parameterName)
+    return @values[parameterName][1]
+  end
+
+  def getParameterNumber(parameterName)
+    return @values[parameterName][0]
+  end
+
+  def setParameterError(parameterName,positiveError,negativeError)
+    if(@values[parameterName].length<4)then
+      @values[parameterName] << positiveError
+      @values[parameterName] << negativeError
+    else
+      @values[parameterName][2]=positiveError
+      @values[parameterName][3]=negativeError
+    end
+  end
+
+  # Returns [positiveError, negativeError].
+  def getParameterError(parameterName) 
+    if(@values[parameterName][2]==nil or @values[parameterName][3]==nil)then
+      STDERR.puts "Error: Component #{modelComponentNumber} #{modelName} #{parameterName} does not have error assigned"
+      exit -1
+    end
+    return [@values[parameterName][2],@values[parameterName][3]]
+  end
+
+  # Returns [parameterMin, parameterMax]
+  def getParameterRange(parameterName)
+    if(@values[parameterName][2]==nil or @values[parameterName][3]==nil)then
+      STDERR.puts "Error: Component #{modelComponentNumber} #{modelName} #{parameterName} does not have error assigned"
+      exit -1
+    end
+    return [@values[parameterName][1]+@values[parameterName][3],@values[parameterName][1]+@values[parameterName][2]]
+  end
+end
+
+class DataGroupFitResult
+  attr_accessor :modelComponents
+
+  def initialize()
+    @modelComponents={} # map modelComponentNumber => ModelComponentFitResult
+  end
+
+  def addParameterResult(parameterNumber, modelComponentNumber, modelName, parameterName, bestFitValue)
+    if(@modelComponents[modelComponentNumber]==nil)then
+      #STDERR.puts "Debug: modelComponentNumber = #{modelComponentNumber}, modelName = #{modelName} instantiated."
+      modelComponent=ModelComponentFitResult.new
+      @modelComponents[modelComponentNumber]=modelComponent
+    end
+    @modelComponents[modelComponentNumber].modelName=modelName
+    @modelComponents[modelComponentNumber].modelComponentNumber=modelComponentNumber
+    @modelComponents[modelComponentNumber].values[parameterName]=[parameterNumber, bestFitValue]
+  end
+
+  def to_s
+    str=[]
+    @modelComponents.each(){|modelComponentNumber, modelCompoenntFitResult|
+      str << modelCompoenntFitResult.to_s
+    }
+    return str.join("\n")
+  end
+
+  def getBestFitValue(modelComponentNumber, parameterName)
+    return @modelComponents[modelComponentNumber].getBestFitValue(parameterName)
+  end
+
+  def setParameterError(modelComponentNumber,paramterName,positiveError,negativeError)
+    @modelComponents[modelComponentNumber].setParameterError(paramterName,positiveError,negativeError)
+  end
+
+  # Returns [positiveError, negativeError].
+  def getParameterError(modelComponentNumber,paramterName) 
+    return @modelComponents[modelComponentNumber].getParameterError(paramterName) 
+  end
+
+  # Returns [parameterMin, parameterMax]
+  def getParameterRange(modelComponentNumber,paramterName)
+    return @modelComponents[modelComponentNumber].getParameterRange(paramterName)
+  end
+end
+
+
+class FitResult
+  def initialize
+    @dataGroups=[]
+    @parameterNumberMap={} #parameterNumber => {dataGroupIndex, modelComponentNumber, parameterName}
+  end
+
+  # Entry method for parsing a fit log.
+  def parseLogFile(logFile)
+    logString=File.read(logFile)
+    logArray=logString.split("\n")
+    if(logArray.count("#========================================================================")==0 or logArray.count("#________________________________________________________________________")==0)then
+      STDERR.puts "Error: log file does not contain a result of 'show all'"
+      exit -1
+    end
+    if(logArray.count("#========================================================================")!=1 or logArray.count("#________________________________________________________________________")!=1)then
+      STDERR.puts "Error: the log file seems to contain multiple 'show all' restuls or fit resutl has been updated in error estimation."
+      exit -1
+    end
+    
+    fitResultString=logString.split("#========================================================================")[-1].split("#________________________________________________________________________")[0]
+    parseFitResult(fitResultString)
+    parseErrorEstimationPart(logFile)
+  end
+
+  private
+  def parseFitResult(fitResultString)
+    fitResultLines=fitResultString.split("\n")
+    currentDataGroup=0
+    currentDataGroupResult=nil
+    fitResultLines.each_with_index(){|line,i|
+      if(line.include?("Data group:"))then
+        currentDataGroup=line.strip.split(":")[-1].strip.to_i
+        if(currentDataGroupResult!=nil)then
+          @dataGroups << currentDataGroupResult
+        end
+        currentDataGroupResult = DataGroupFitResult.new
+        next
+      end
+      #process the best-fit values for a single data group
+      if(currentDataGroup!=0)then
+        array=line.gsub(/^#/,"").gsub(/\s\s/," ").split(" ")
+        parameterNumber=array[0].to_i
+        modelComponentNumber=array[1].to_i
+        modelName=array[2]
+        parameterName=array[3]
+        bestFitValue=array[4].to_f
+        currentDataGroupResult.addParameterResult(parameterNumber, modelComponentNumber, modelName, parameterName, bestFitValue)
+        #puts "@parameterNumberMap[#{parameterNumber}]=#{{dataGroupIndex:currentDataGroup, modelComponentNumber:modelComponentNumber, parameterName:parameterName}}"
+        @parameterNumberMap[parameterNumber]={dataGroupIndex:currentDataGroup, modelComponentNumber:modelComponentNumber, parameterName:parameterName}
+      end
+      #if this is the last line
+      if(i==fitResultLines.length-1)then
+        @dataGroups << currentDataGroupResult
+      end
+    }
+  end
+
+  private
+  def parseErrorEstimationPart(logFile)
+    open(logFile).each(){|line|
+      if(line.match(/\(([\-\.0-9]+),([\-\.0-9]+)\)/))then
+        negativeError=Regexp.last_match[1].to_f
+        positiveError=Regexp.last_match[2].to_f
+        array=line.strip.gsub(/^#/,"").gsub(/\s\s/," ").split(" ")
+        parameterNumber=array[0].to_i
+        parameterMin=array[1].to_f
+        parameterMax=array[2].to_f
+        # STDERR.puts "Debug: parameterNumber = #{parameterNumber}  error = (#{negativeError},#{positiveError})"
+        setParameterError(parameterNumber,positiveError,negativeError)
+      end
+    }
+  end
+
+  private
+  def setParameterError(parameterNumber,positiveError,negativeError)
+    #puts "setParameterError(parameterNumber,positiveError,negativeError) = #{parameterNumber},#{positiveError},#{negativeError}"
+    dataGroupIndex=@parameterNumberMap[parameterNumber][:dataGroupIndex]
+    modelComponentNumber=@parameterNumberMap[parameterNumber][:modelComponentNumber]
+    parameterName=@parameterNumberMap[parameterNumber][:parameterName]
+    @dataGroups[dataGroupIndex-1].setParameterError(modelComponentNumber,parameterName,positiveError,negativeError)
+  end
+
+  public
+  # Returns the best-fit value of the specified parameter.
+  def getBestFitValue(dataGroupIndex, modelComponentNumber, parameterName)
+    return @dataGroups[dataGroupIndex-1].getBestFitValue(modelComponentNumber, parameterName)
+  end
+
+  # Returns [positiveError, negativeError].
+  def getParameterError(dataGroupIndex,modelComponentNumber,paramterName) 
+    return @dataGroups[dataGroupIndex-1].getParameterError(modelComponentNumber,paramterName) 
+  end
+
+  # Returns [parameterMin, parameterMax]
+  def getParameterRange(dataGroupIndex,modelComponentNumber,paramterName)
+    return @dataGroups[dataGroupIndex-1].getParameterRange(modelComponentNumber,paramterName)
+  end
+
+  def to_s
+    str=[]
+    @dataGroups.each_with_index(){|dataGroup,i|
+      str << "============================================"
+      str << "Data group #{i+1}"
+      str << "============================================"
+      str << dataGroup
+    }
+    return str.join("\n")
+  end
+end
+
+
+##############################################
+# parse the log file
+##############################################
+fitResult=FitResult.new
+fitResult.parseLogFile(logFile)
+
+
+##############################################
+# output result
+##############################################
+bestFitValue=fitResult.getBestFitValue(dataGroupIndex, modelComponentNumber, parameterName)
+positiveError=fitResult.getParameterError(dataGroupIndex, modelComponentNumber, parameterName)[0]
+negativeError=fitResult.getParameterError(dataGroupIndex, modelComponentNumber, parameterName)[1]
+valueMin=fitResult.getParameterRange(dataGroupIndex, modelComponentNumber, parameterName)[0]
+valueMax=fitResult.getParameterRange(dataGroupIndex, modelComponentNumber, parameterName)[1]
+
+if(type=="value")then
+  puts format % bestFitValue
+elsif(type=="errp")then
+  puts format % positiveError
+elsif(type=="errm")then
+  puts format % negativeError
+elsif(type=="value_errp_errm")then
+  puts "$#{format % bestFitValue}^{#{format_plus % positiveError}}_{#{format % negativeError}}$"
+elsif(type=="errP")then
+  if(valueMax!=nil)then
+  puts format % valueMax
+  end
+elsif(type=="errM")then
+  if(valueMin!=nil)then
+  puts format % valueMin
+  end
+elsif(type=="value_errM_errP")then
+  if(valueMin!=nil and valueMax!=nil)then
+    if(outputStyle=="tex")then
+      puts "#{format % bestFitValue}(#{(format_plus % valueMin).gsub("+","")}-#{(format % valueMax).gsub("+","")})"
+    elsif(outputStyle=="gnuplot")then
+      puts "#{format % bestFitValue} #{(format_plus % valueMin).gsub("+","")} #{(format % valueMax).gsub("+","")}"
+    end
+  end
 end
