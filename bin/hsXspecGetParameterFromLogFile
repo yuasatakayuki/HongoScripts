@@ -215,7 +215,7 @@ class FitResult
         modelComponentNumber=array[1].to_i
         modelName=array[2]
         parameterName=array[3]
-        bestFitValue=array[4].to_f
+        bestFitValue=line.split("+/-")[0].split(" ")[-1].to_f
         currentDataGroupResult.addParameterResult(parameterNumber, modelComponentNumber, modelName, parameterName, bestFitValue)
         #puts "@parameterNumberMap[#{parameterNumber}]=#{{dataGroupIndex:currentDataGroup, modelComponentNumber:modelComponentNumber, parameterName:parameterName}}"
         @parameterNumberMap[parameterNumber]={dataGroupIndex:currentDataGroup, modelComponentNumber:modelComponentNumber, parameterName:parameterName}
