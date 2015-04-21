@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20150421
+
+cat << EOF
+<?php
+
+phpinfo();
+
+?>
+EOF
