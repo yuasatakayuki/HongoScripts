@@ -23,6 +23,7 @@ end
 open(ARGV[0]).each(){|line|
 	variableName=line.split("=")[0].strip
 	variableName_original=variableName
+	if(variableName==nil or variableName=="")then next end
 	variableName=variableName[0].capitalize+variableName[1..-1]
 	variableName=variableName.gsub(/([A-Z]+)/,'_\1').gsub(/File$/,"_File")
 
