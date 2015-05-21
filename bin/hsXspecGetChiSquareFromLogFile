@@ -11,7 +11,7 @@
 #2 effective digits(optional)
 
 if(ARGV.length<2)then
-print "usage : _hsOld_get_parameter_from_xspec_logfile (xspec logfile name) (parameter name [one of chisquare, reducedchisquare, ndf, ndof, or nhp]) (effective digits;optional)\n"
+print "usage : _hsOld_get_parameter_from_xspec_logfile (xspec logfile name) (parameter name [one of chisquare, reducedchisquare, ndf, ndof, or nhp]) (ruby-style number format;optional)\n"
 exit
 end
 
@@ -66,7 +66,7 @@ else
 end
 
 if(ARGV.length==3)then
- print format("%.#{ARGV[2]}G",value)
+ print format(ARGV[2],value)
 else
  print "#{value}"
 end
