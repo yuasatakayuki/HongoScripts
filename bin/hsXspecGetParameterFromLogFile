@@ -3,6 +3,8 @@
 #20101111 Takayuki Yuasa
 #20130429 Takayuki Yuasa added support for parallelized error estimation (e.g. error 1 2 3)
 
+$debug=false
+
 if(ARGV.length<3)then
 puts <<EOS
 Provide:
@@ -197,27 +199,38 @@ class FitResult
   private
   def parseFitResult(fitResultString)
     fitResultLines=fitResultString.split("\n")
-    currentDataGroup=0
-    currentDataGroupResult=nil
+    currentDataGroup=1
+    currentDataGroupResult=DataGroupFitResult.new
     fitResultLines.each_with_index(){|line,i|
       if(line.include?("Data group:"))then
         currentDataGroup=line.strip.split(":")[-1].strip.to_i
-        if(currentDataGroupResult!=nil)then
+        if(currentDataGroupResult!=nil and currentDataGroupResult.modelComponents.length!=0)then
+          if($debug)then
+            puts "Debug parameterNumber(): adding currentDataGroupResult to @dataGroups"
+          end
           @dataGroups << currentDataGroupResult
+          if($debug)then
+            puts "Debug parameterNumber(): @dataGroups=#{@dataGroups}"
+          end
         end
         currentDataGroupResult = DataGroupFitResult.new
         next
       end
       #process the best-fit values for a single data group
-      if(currentDataGroup!=0)then
+      if(currentDataGroup!=0 and line.include?("+/-"))then
         array=line.gsub(/^#/,"").gsub(/\s\s/," ").split(" ")
         parameterNumber=array[0].to_i
         modelComponentNumber=array[1].to_i
         modelName=array[2]
         parameterName=array[3]
         bestFitValue=line.split("+/-")[0].split(" ")[-1].to_f
+        if($debug)then
+          puts "Debug parseFitResult(): parameterName=#{parameterName} bestFitValue=#{bestFitValue} "
+        end
         currentDataGroupResult.addParameterResult(parameterNumber, modelComponentNumber, modelName, parameterName, bestFitValue)
-        #puts "@parameterNumberMap[#{parameterNumber}]=#{{dataGroupIndex:currentDataGroup, modelComponentNumber:modelComponentNumber, parameterName:parameterName}}"
+        if($debug)then
+          puts "Debug parseFitResult(): @parameterNumberMap[#{parameterNumber}]=#{{dataGroupIndex:currentDataGroup, modelComponentNumber:modelComponentNumber, parameterName:parameterName}}"
+        end
         @parameterNumberMap[parameterNumber]={dataGroupIndex:currentDataGroup, modelComponentNumber:modelComponentNumber, parameterName:parameterName}
       end
       #if this is the last line
@@ -246,9 +259,15 @@ class FitResult
   private
   def setParameterError(parameterNumber,positiveError,negativeError)
     #puts "setParameterError(parameterNumber,positiveError,negativeError) = #{parameterNumber},#{positiveError},#{negativeError}"
+    if($debug)then
+      puts "Debug setParameterError(): parameterNumber=#{parameterNumber} errp=#{positiveError} errm=#{negativeError}"
+    end
     dataGroupIndex=@parameterNumberMap[parameterNumber][:dataGroupIndex]
     modelComponentNumber=@parameterNumberMap[parameterNumber][:modelComponentNumber]
     parameterName=@parameterNumberMap[parameterNumber][:parameterName]
+    if($debug)then
+      puts "Debug setParameterError(): dataGroupIndex=#{dataGroupIndex} modelComponentNumber=#{modelComponentNumber} parameterName=#{parameterName}"
+    end
     @dataGroups[dataGroupIndex-1].setParameterError(modelComponentNumber,parameterName,positiveError,negativeError)
   end
 
