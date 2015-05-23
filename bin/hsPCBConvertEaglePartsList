@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150519
+
+if(ARGV.length<1)then
+	puts "Provide a parts list file output by Eagle."
+	exit
+end
+
+inputFileName=ARGV[0]
+
+header=true
+
+map={}
+
+open(inputFileName).each(){|line|
+	#header end check
+	if(line.include?("Part") and line.include?("Value") and line.include?("Library"))then
+		header=false
+		next
+	end
+
+	#if still in the header part, jump to process the next line
+	if(header)then next end
+
+	array=line.gsub(",","_").split(" ")
+
+	#check
+	if(array.length<5)then next end
+
+	#
+	if(array.length==6)then
+		partName=array[0]
+		value=array[1]
+		deviceName=array[2]
+		package=array[3]
+	else
+		partName=array[0]
+		value=""
+		deviceName=array[1]
+		package=array[2]
+	end
+
+	if(map[deviceName]==nil)then
+		map[deviceName]={}
+	end
+
+	if(map[deviceName][value]==nil)then
+		map[deviceName][value]={package:package,partNames:[]}
+	end
+
+	map[deviceName][value][:partNames] << partName
+
+}
+
+map.each(){|deviceName,valueMap|
+	valueMap.each(){|value,mapPackageAndPartNames|
+		package=mapPackageAndPartNames[:package]
+		partNames=mapPackageAndPartNames[:partNames]
+		puts <<EOS
+#{deviceName}, #{package}, #{value}, #{partNames.join(" ")}, #{partNames.length}
+EOS
+	}
+}
