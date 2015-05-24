@@ -11,7 +11,7 @@ Provide:
 	4: energy lower limit (e.g. 1.0)
 	5: energy upper limit (e.g. 10.0)
 	6: significant digits
-	7: (optional) value/err to select which number to be output
+	7: (optional) value/error to select which number to be output
 EOF
 	exit
 fi
@@ -26,7 +26,7 @@ if [ _$6 != _ ]; then
 	significantDigits=$6
 fi
 option=""
-if [ _$7 = _ ]; then
+if [ _$7 != _ ]; then
 	option=$7
 fi
 
@@ -53,8 +53,8 @@ array=line.split(" ")
 puts "\$#{"%.${significantDigits}f"%array[-6].to_f}\\\\pm#{"%.${significantDigits}f"%array[-4].to_f}$"
 EOF
 else
-	if [ $option = error ]; then
-		ryby << EOF
+	if [ $option = error -o $option = err ]; then
+		ruby << EOF
 line="$countRateLine"
 array=line.split(" ")
 puts "#{"%.${significantDigits}f"%array[-4].to_f}"
@@ -63,7 +63,7 @@ EOF
 	fi
 	
 	if [ $option = value ]; then
-		ryby << EOF
+		ruby << EOF
 line="$countRateLine"
 array=line.split(" ")
 puts "#{"%.${significantDigits}f"%array[-6].to_f}"
