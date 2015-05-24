@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20150524
+
+if [ _$2 = _ ]; then
+	echo "Provide spectrum file (.pi) and scaling factor."
+	exit
+fi
+
+inputFile=$1
+factor=$2
+
+if [ ! -f $inputFile ]; then
+	echo "Error: file not found"
+	exit
+fi
+
+outputFile=`basename $inputFile .pi`_scaled.pi
+
+exposure=`hsFitsGetExposure $inputFile`
+newExposure=`calc "${exposure}*1.0/${factor}"`
+
+echo "Exposure $exposure s => $newExposure s"
+
+cp $inputFile $outputFile
+
+hsFitsGetExposure $outputFile $newExposure
+
+echo "Input File  = $inputFile ($exposure s)"
+echo "Output File = $outputFile ($newExposure s)"
