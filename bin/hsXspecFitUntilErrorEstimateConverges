@@ -51,7 +51,7 @@ function doFittingInXspec(){
 	echo " outputXCMFile = $outputXCMFile"
 	echo "============================================="
 	nIteration=`calc "$nIteration + 1"`
-	logFile=log_xspec_`wsHash`
+	logFile=log_xspec_`hsHash`
 
 	xspec << EOF &> $logFile 
 @$inputXCMFile
