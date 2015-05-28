@@ -1,0 +1,108 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20140611
+
+if [ _$3 = _ ]; then
+	cat << EOF
+Provide the following:
+	1: an XCM file that contains commands for loading files and fit model
+	2: model parameter number of which errors should be estimated (enclosed in a pair of double quotations e.g. "3 4 8")
+	3: output XCM file name
+	4: output log file (optional)
+EOF
+	exit
+fi
+
+NParallelThreads=8
+
+# arguments
+inputXCMFile=$1
+parameterNumbers=$2
+outputXCMFile=$3
+outputLogFile=none
+
+if [ _$4 != _ ]; then
+	outputLogFile=$4
+fi	
+
+cat << EOF
+InputXCMFile     = $inputXCMFile
+ParameterNumbers = $parameterNumbers
+OutputXCMFile    = $outputXCMFile
+OutputLogFile    = $outputLogFile
+EOF
+
+# check file existence
+if [ ! -f $inputXCMFile ]; then
+	echo "Error: input XCM file $inputXCMFile not found"
+	exit
+fi
+
+
+allErrorsEstimated="no"
+nIteration=0
+
+# do xspec
+function doFittingInXspec(){
+	echo "============================================="
+	echo "function doFittingInXspec()"
+	echo " nIteration    = $nIteration"
+	echo " inputXCMFile  = $inputXCMFile"
+	echo " outputXCMFile = $outputXCMFile"
+	echo "============================================="
+	nIteration=`calc "$nIteration + 1"`
+	logFile=log_xspec_`wsHash`
+
+	xspec << EOF &> $logFile 
+@$inputXCMFile
+query yes
+fit 1000
+parallel error $NParallelThreads
+error $parameterNumbers
+exit
+y
+EOF
+	modelParameterNotConverged=`grep "Error: A new min was found while calculating error in the parallel process for par" $logFile | tail -1 | ruby -e "line=STDIN.gets();if(line!=nil)then puts line.strip.split(\" \")[-1];end"`
+	if [ _$modelParameterNotConverged = _ ]; then
+		#converged (i.e. errors of all parameters were successfully estimated without finding a new minimum
+		allErrorsEstimated="yes"
+		if [ $inputXCMFile != $outputXCMFile ]; then
+			cp $inputXCMFile $outputXCMFile
+		fi
+	else
+		allErrorsEstimated="no"
+	fi
+
+	#rm -f $logFile
+
+}
+
+function doSingleParameterErrorEstimation(){
+	echo "============================================="
+	echo "function doSingleParameterErrorEstimation()"
+	echo " parameter = $modelParameterNotConverged"
+	echo "============================================="
+	rm -f $outputXCMFile
+	xspec << EOF
+@$inputXCMFile
+query yes
+fit 1000
+log $outputLogFile
+fit 1000
+show all
+error $modelParameterNotConverged
+log none
+save all $outputXCMFile
+EOF
+
+}
+
+# check if a new fit minimum is found or not
+
+while [ $allErrorsEstimated = "no" ]; do
+	doFittingInXspec
+	if [ $allErrorsEstimated = "no" ]; then
+		doSingleParameterErrorEstimation
+		inputXCMFile=$outputXCMFile
+	fi
+done
