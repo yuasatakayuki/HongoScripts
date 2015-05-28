@@ -55,9 +55,12 @@ function doFittingInXspec(){
 
 	xspec << EOF &> $logFile 
 @$inputXCMFile
+
+parallel leven $NParallelThreads
+parallel error $NParallelThreads
+
 query yes
 fit 1000
-parallel error $NParallelThreads
 error $parameterNumbers
 exit
 y
@@ -85,6 +88,9 @@ function doSingleParameterErrorEstimation(){
 	rm -f $outputXCMFile
 	xspec << EOF
 @$inputXCMFile
+
+parallel leven $NParallelThreads
+
 query yes
 fit 1000
 log $outputLogFile
