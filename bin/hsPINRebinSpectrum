@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20150525
+
+if [ _$1 = _ ]; then
+	echo "Provide PI file to be rebinned and output (rebinned) file name."
+	exit
+fi
+
+inputFileName=$1
+outputFileName=$2
+
+rm -f $outputFileName
+
+grppha $inputFileName $outputFileName << EOF
+group 0 256 4
+exit
+
+EOF
+
+if [ ! -f $outputFileName ]; then
+	echo "Error: failed to rebin"
+else
+	echo "Output file: $outputFileName created"
+fi
