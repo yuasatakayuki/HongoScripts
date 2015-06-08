@@ -30,7 +30,7 @@ connections=[]
 componentname=""
 open("$file").each {|line|
  line.gsub!(/--.*?$/,"")
- head=line.split(" ")[0]
+ head=line.downcase.split(" ")[0]
  if(head==nil)then
   next
  end
@@ -45,13 +45,13 @@ open("$file").each {|line|
   end
   signals.push("signal #{a[0]} : #{b}")
  end
- if(line.include?("component ") and flag==false)then
+ if(line.downcase.include?("component ") and flag==false)then
   componentname=line.split(" ")[1]
  end
- if(line.include?("entity ") and flag==false)then
+ if(line.downcase.include?("entity ") and flag==false)then
   componentname=line.split(" ")[1]
  end
- if(line.include?("port") and line.include?("("))then
+ if(line.downcase.include?("port") and line.include?("("))then
   flag=true
  end
 }
