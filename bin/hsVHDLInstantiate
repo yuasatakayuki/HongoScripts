@@ -1,10 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env ruby
 
 #20100601 Takayuki Yuasa
-
-if [ _$1 = _ ]; then
+#20150610 Takayuki Yuasa
+if(ARGV.length==0)then
 name=`basename $0`
-cat << EOF
+puts <<EOS
 usage:
 $name (file)
 
@@ -12,23 +12,36 @@ The input file should contain component declaration
 or entity declaration of a vhdl module. This script
 extract signal names, and then connect them to signals
 that have the same names as the entities.
-EOF
+EOS
 exit
-fi
+end
 
-if [ ! -f $1 ]; then
- echo "file not found...exit"
+if(!File.exist?(ARGV[0]))then
+ puts "file not found...exit"
  exit
-fi
+end
 
-file=$1
+file=ARGV[0]
+prefix=""
+if(ARGV.length>1)then
+  prefix=ARGV[1]
+end
 
-ruby << EOF
+def convertSignalName(signalName)
+  map={"din"=>"DataIn", "dout"=>"DataOut", "full"=>"Full", "empty"=>"Empty", "data_count"=>"DataCount",
+    "clk"=>"Clock", "rst"=>"Reset", "wr_en"=>"WriteEnable", "rd_en"=>"ReadEnable"}
+  if(map[signalName]!=nil)then
+    return map[signalName]
+  else
+    return signalName
+  end
+end
+
 flag=false
 signals=[]
 connections=[]
 componentname=""
-open("$file").each {|line|
+open(file).each {|line|
  line.gsub!(/--.*?$/,"")
  head=line.downcase.split(" ")[0]
  if(head==nil)then
@@ -36,14 +49,15 @@ open("$file").each {|line|
  end
  if(flag==true and (!head.include?("--")) and (!head.include?(")")) and (!head.include?("end")) )then
   a=line.split(" ")[0].split(":")
-  connections.push("#{a[0]} => #{a[0]},")
+  signalName=convertSignalName(a[0])
+  connections.push("#{a[0]} => #{prefix}#{signalName},")
   line=line.downcase
   line2=line.gsub(":in",": in").gsub(":out",": out")
   b=line2.split(" in ")[-1].split(" out ")[-1]
   if(!b.include?(";"))then
    b[b.length-1,1]=";"
   end
-  signals.push("signal #{a[0]} : #{b}")
+  signals.push("signal #{prefix}#{signalName} : #{b}")
  end
  if(line.downcase.include?("component ") and flag==false)then
   componentname=line.split(" ")[1]
@@ -70,4 +84,3 @@ port map(
 );
 EOS
 
-EOF
