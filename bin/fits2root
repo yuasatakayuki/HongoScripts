@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150709
+
+if(ARGV.length<2)then
+	puts "Provide FITS file and output ROOT file name."
+	exit
+end
+
+inputFITSFileName=ARGV[0]
+outputROOTFileName=ARGV[1]
+
+if(!File.exist?(inputFITSFileName))then
+	STDERR.puts "Error: input FITS file not found"
+	exit -1
+end
+
+require "RubyFits"
+require "RubyROOT"
+
+fits=Fits::FitsFile.new(inputFITSFileName)
+
+xSize=fits[0].getXSize()
+ySize=fits[0].getYSize()
+
+hist2d=Root::TH2D.create("primaryImage","Primary HDU",xSize,-0.5,xSize-0.5,ySize,-0.5,ySize-0.5)
+
+xaxis=hist2d.GetXaxis()
+yaxis=hist2d.GetYaxis()
+
+for y in 0...ySize
+	xPixels=fits[0].getXPixels(y)
+	for x in 0...xSize
+		xBin=xaxis.FindBin(x)
+		yBin=yaxis.FindBin(y)
+		hist2d.SetBinContent(xBin, yBin, xPixels[x])
+	end
+end
+
+Root::TFile.open(outputROOTFileName,"recreate") do
+	hist2d.Write()
+end
