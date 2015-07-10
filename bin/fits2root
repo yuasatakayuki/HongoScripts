@@ -20,23 +20,195 @@ require "RubyROOT"
 
 fits=Fits::FitsFile.new(inputFITSFileName)
 
-xSize=fits[0].getXSize()
-ySize=fits[0].getYSize()
+nHDUs=fits.length
+puts "Total #{nHDUs} HDUs detected."
 
-hist2d=Root::TH2D.create("primaryImage","Primary HDU",xSize,-0.5,xSize-0.5,ySize,-0.5,ySize-0.5)
 
-xaxis=hist2d.GetXaxis()
-yaxis=hist2d.GetYaxis()
+#---------------------------------------------
+# Conversion functions
+#---------------------------------------------
+def convertToTH2D(imageHDU)
+	hduName=imageHDU.getHDUName()
+	xSize=imageHDU.getXSize()
+	ySize=imageHDU.getYSize()
 
-for y in 0...ySize
-	xPixels=fits[0].getXPixels(y)
-	for x in 0...xSize
-		xBin=xaxis.FindBin(x)
-		yBin=yaxis.FindBin(y)
-		hist2d.SetBinContent(xBin, yBin, xPixels[x])
+	puts "Converting #{hduName} to TH2D"
+	hist2d=Root::TH2D.create("#{hduName}","#{hduName}",xSize,-0.5,xSize-0.5,ySize,-0.5,ySize-0.5)
+
+	xaxis=hist2d.GetXaxis()
+	yaxis=hist2d.GetYaxis()
+
+	xaxis.SetTitle("X")
+	yaxis.SetTitle("Y")
+
+	for y in 0...ySize
+		xPixels=fits[0].getXPixels(y)
+		for x in 0...xSize
+			xBin=xaxis.FindBin(x)
+			yBin=yaxis.FindBin(y)
+			hist2d.SetBinContent(xBin, yBin, xPixels[x])
+		end
+	end
+	hist2d.Write()
+end
+
+def convertToTH1D(hdu)
+	hduName=hdu.getHDUName()
+	xValueColumn=nil
+	xTitle=""
+	if(hdu["CHANNEL"]!=nil)then
+		xValueColumn=hdu["CHANNEL"]
+		xTitle="CHANNEL"
+	else
+		puts "Warning: #{hduName} does not contain CHANNEL column. Skipped."
+		return
+	end
+	yValueColumn=nil
+	yErrValueColumn=nil
+	yTitle=""
+	yColumnCandidates=["COUNTS","RATE"]
+	yColumnCandidates.each(){|e|
+		if(hdu[e]!=nil)then
+			yValueColumn=hdu[e]
+			yTitle=e
+			break
+		end
+	}
+	if(yValueColumn==nil)then
+		puts "Warning: #{hduName} does not contain "
+		return
+	end
+
+	nXBins=xValueColumn.length
+	xBinLower=xValueColumn[0]
+	xBinUpper=xValueColumn[nXBins-1]
+
+	hist=Root::TH1D.create(hduName,hduName,nXBins,xBinLower,xBinUpper)
+	xAxis=hist.GetXaxis()
+	yAxis=hist.GetYaxis()
+	xAxis.SetTitle(xTitle)
+	yAxis.SetTitle(yTitle)
+	for i in 0...nXBins
+		xBinIndex=xAxis.FindBin(xValueColumn[i])
+		yValue=yValueColumn[i]
+		hist.SetBinContent(xBinIndex, yValue)
+	end
+
+	hist.Write()
+end
+
+# - C : a character string terminated by the 0 character
+# - B : an 8 bit signed integer (Char_t)
+# - b : an 8 bit unsigned integer (UChar_t)
+# - S : a 16 bit signed integer (Short_t)
+# - s : a 16 bit unsigned integer (UShort_t)
+# - I : a 32 bit signed integer (Int_t)
+# - i : a 32 bit unsigned integer (UInt_t)
+# - F : a 32 bit floating point (Float_t)
+# - D : a 64 bit floating point (Double_t)
+# - L : a 64 bit signed integer (Long64_t)
+# - l : a 64 bit unsigned integer (ULong64_t)
+# - O : [the letter 'o', not a zero] a boolean (Bool_t)
+
+def symbolize_keys(hash)
+	newHash={}
+	hash.each(){ |key,value|
+		newHash[key.to_sym]=value
+	}
+	return newHash
+end
+
+def convertToTTree(hdu)
+	puts "Creating a TTree"
+	hduName=hdu.getHDUName
+	columDefinitionMap={}
+	nRows = hdu[0].length
+	hdu.getColumns().each(){|column|
+		columnName=column.getName()
+		columnType=column.getType()
+		columnRepeat=column.getRepeatLength()
+		columnTypeROOT=""
+		puts "#{columnName} #{Fits::FitsDataType.toString(columnType)}"
+		case columnType
+		when Fits::FitsDataType::DOUBLE
+			columnTypeROOT="D"
+		when Fits::FitsDataType::FLOATING
+			columnTypeROOT="F"
+		when Fits::FitsDataType::LONGLONG
+			columnTypeROOT="I"
+		when Fits::FitsDataType::LONG
+			columnTypeROOT="I"
+		when Fits::FitsDataType::SHORT
+			columnTypeROOT="S"
+		when Fits::FitsDataType::BYTE
+			columnTypeROOT="b"
+		when Fits::FitsDataType::BOOLEAN
+			columnTypeROOT="O"
+		when Fits::FitsDataType::STRING
+			columnTypeROOT="A"
+		when Fits::FitsDataType::ASCII
+			columnTypeROOT="A"
+		end
+		#columDefinitionMap[columnName]=[ type: columnType, repeat: columnRepeat ]
+		columDefinitionMap[columnName]=columnTypeROOT
+	}
+	tree = Root::TTree.create(hduName, hduName)
+	hash=symbolize_keys(columDefinitionMap)
+	puts hash
+	row = tree.define(hash)
+	nColumns=hdu.getColumnLength
+	for i in 0...nRows
+		for o in 0...nColumns
+			columnName=hdu[o].getColumnName()
+			row[columnName] = hdu[o][i]
+		end
+		tree.Fill
+	end
+	tree.Write
+end
+
+def convertToROOTContainer(hdu)
+	hduName=hdu.getHDUName()
+	puts "Processing #{hduName} HDU"
+	if(hduName=="SPECTRUM")then #convert to histogram
+		convertToTH1D(hdu)		
+	elsif(hduName.include?("IMAGE") or hduName.include?("IMG") )then #convert to image
+		convertToTH2D(hdu)
+	else #convert to tree
+		convertToTTree(hdu)
 	end
 end
 
+#---------------------------------------------
+# Do convert
+#---------------------------------------------
 Root::TFile.open(outputROOTFileName,"recreate") do
-	hist2d.Write()
+	#---------------------------------------------
+	# Primary HDU
+	#---------------------------------------------
+	puts "Processing Primary HDU"
+
+	xSize=fits[0].getXSize()
+	ySize=fits[0].getYSize()
+
+	if(xSize!=0 and ySize!=0)then
+	end
+
+	#---------------------------------------------
+	# Loop over extension HDUs
+	#---------------------------------------------
+	for hduIndex in 1...nHDUs
+		hdu=fits[hduIndex]
+		convertToROOTContainer(hdu)
+	end
+
+	#---------------------------------------------
+	# 
+	#---------------------------------------------
+
+	#---------------------------------------------
+	# Save to file
+	#---------------------------------------------
+
+		
 end
