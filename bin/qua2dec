@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+#20150604 Takayuki Yuasa
+
+ARGV.each(){|line|
+	puts line.to_i(4)
+}
