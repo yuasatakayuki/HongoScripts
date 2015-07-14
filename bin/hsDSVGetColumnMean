@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150627
+
+if(ARGV.length<2)then
+	puts "Provide DSV (CSV) file, column index (0 start), and delimitter (optional; default is white space)."
+	exit
+end
+
+file=ARGV[0]
+columnIndex=ARGV[1].to_i
+delimitter=" "
+if(ARGV[2]!=nil)then delimitter=ARGV[2] end
+
+sum=0
+nEntries=0
+open(file).each(){|line|
+	array=line.split(delimitter)
+	if(array.length>columnIndex)then
+		sum+=array[columnIndex].to_f
+		nEntries+=1
+	end
+}
+
+puts sum/nEntries
