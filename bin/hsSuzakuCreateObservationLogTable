@@ -45,7 +45,7 @@ exposure=`hsFitsGetExposure $xisPIFile`
 exposure_ks=`ruby -e "puts '%.1f'%($exposure/1000)"`
 
 #get count rate
-xisEnergyRangeLower=1.0
+xisEnergyRangeLower=0.5
 xisEnergyRangeUpper=10.0
 xisCountRateTeX=`hsXspecGetCountRate $xisPIFile $folder/analysis/xis/spectral_analysis/bgds/${tag}/fi_bgd1.pi $folder/analysis/xis/spectral_analysis/responses/fi.rmf ${xisEnergyRangeLower} ${xisEnergyRangeUpper}`
 
