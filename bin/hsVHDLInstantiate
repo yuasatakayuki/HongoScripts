@@ -29,7 +29,8 @@ end
 
 def convertSignalName(signalName)
   map={"din"=>"DataIn", "dout"=>"DataOut", "full"=>"Full", "empty"=>"Empty", "data_count"=>"DataCount",
-    "clk"=>"Clock", "rst"=>"Reset", "wr_en"=>"WriteEnable", "rd_en"=>"ReadEnable"}
+    "clk"=>"Clock", "rst"=>"Reset", "wr_en"=>"WriteEnable", "rd_en"=>"ReadEnable",
+    "wr_clk"=>"WriteClock", "rd_clk"=>"ReadClock"}
   if(map[signalName]!=nil)then
     return map[signalName]
   else
