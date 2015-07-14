@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150519
+
+if(ARGV.length<1)then
+	puts "Provide output file name."
+	exit
+end
+
+outputFileName=ARGV[0]
+
+fileMap={
+cmp: "部品面パターンデータ",
+gpi: "レポートファイル",
+plc: "部品面シルクデータ",
+sol: "半田面パターンデータ",
+stc: "部品面レジストデータ",
+sts: "半田面レジストデータ",
+pls: "半田面シルクデータ",
+out: "外形線データ",
+drd: "ドリルデータ",
+dri: "ドリルリスト"
+}
+
+# check
+fileMap.each(){|extension,description|
+	if(Dir.glob("*.#{extension}").length==0)then
+		STDERR.puts "Error: .#{extension} file (#{description}) not found"
+		STDERR.puts "Execute this script inside the folder that contains Gerber and Drill files created by Eagle."
+		exit -1
+	end
+	if(Dir.glob("*.#{extension}").length!=1)then
+		STDERR.puts "Error: more than one .#{extension} file (#{description}) found."
+		STDERR.puts "Check if the current directory contains only a single set of Gerber/Drill data."
+		exit -1
+	end
+}
+
+open(outputFileName,"w") do |file|
+	file.puts "このファイルは#{Time.now}に作成されました。"
+	file.puts "---------------------------------------------"
+	fileMap.each(){|extension,description|
+		fileName=Dir.glob("*.#{extension}")[0]
+		file.puts "#{fileName} (#{description})"
+	}
+end
