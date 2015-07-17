@@ -10,8 +10,6 @@ fi
 
 fitsFile=$1
 hduIndex=$2
-#increment hduIndex for FTOOLS notation
-hduIndex=$(calc "$hduIndex+1")
 outputFile=$3
 
 fdump infile="$fitsFile[$hduIndex]" outfile=$outputFile prhead=yes prdata=no columns=- rows=- clobber=yes
