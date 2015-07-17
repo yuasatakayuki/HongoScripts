@@ -12,4 +12,4 @@ fitsFile=$1
 hduIndex=$2
 outputFile=$3
 
-fdump infile="$fitsFile[$hduIndex]" outfile=$outputFile prhead=yes prdata=no columns=- rows=- clobber=yes
+fdump infile="$fitsFile[$hduIndex]" outfile=$outputFile prhead=yes prdata=no columns=- rows=- clobber=yes page=no
