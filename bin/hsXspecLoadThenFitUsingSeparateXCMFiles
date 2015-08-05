@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# Takayuki Yuasa 20150804
+
+if [ _$3 = _ ]; then
+	cat << EOF
+Provide:
+	1: Data load XCM file
+	2: Model XCM file
+	3: Output prefix 
+	4: Error parameters (use double-quotation for multiple values)
+	5: EQW parameters (use double-quotation for multiple values)
+
+Result will be like the following:
+ Resulting XCM file: fittings/output_prefix.xcm
+           Log file: fittings/output_prefix.log
+Parameter dump file: fittings/output_prefix.parameters
+EOF
+	exit
+fi
+
+#process arguments
+loadXCMFile=$1
+modelXCMFile=$2
+outputPrefix=fittings/$3
+errorCommands=$(ruby -e "'$4'.split(' ').each(){|e| puts \"error #{e}\"}")
+eqwCommands=$(ruby -e "'$5'.split(' ').each(){|e| puts \"eqwidth #{e} err 1000 90\"}")
+
+
+#check file existence
+if [ ! -f $loadXCMFile ]; then
+	echo "Error: Data load XCM file ($loadXCMFile) not found."
+	exit -1
+fi
+if [ ! -f $modelXCMFile ]; then
+	echo "Error: Model XCM file ($modelXCMFile) not found."
+	exit -1
+fi
+
+#check output folder
+if [ ! -d fittings ]; then
+	mkdir fittings
+	if [ ! -d fittings ]; then
+		echo "Error: fittings/ folder could not be created."
+		exit -1
+	fi
+fi
+
+#determine file names
+outputXCMFile=${outputPrefix}.xcm
+outputLogFile=${outputPrefix}.log
+outputWholeLogFile=${outputPrefix}.log.whole
+outputParameterFile=${outputPrefix}.parameters
+
+rm -f ${outputXCMFile} ${outputLogFile}
+
+#dump configuration
+cat << EOF
+Error comamnds:
+${errorCommands}
+
+EQW commands:
+${eqwCommands}
+
+Files:
+      outputXCMFile: ${outputXCMFile}
+      outputLogFile: ${outputLogFile}
+ outputWholeLogFile: ${outputWholeLogFile}
+outputParameterFile: ${outputParameterFile}
+
+Fitting using Xspec...
+
+EOF
+
+#start fitting
+function doFit(){
+xspec << EOF > ${outputWholeLogFile}
+@$loadXCMFile
+@$modelXCMFile
+
+parallel leven 2
+parallel error 2
+
+query yes
+renorm
+fit 100
+
+log ${outputLogFile}
+show all
+${errorCommands}
+${eqwCommands}
+log none
+
+fit 100
+
+save all ${outputXCMFile}
+
+exit
+
+EOF
+}
+
+doFit
+
+nTrial=0
+while [ $(hxXspecCheckLogIfNewBestFitFound $outputLogFile) = yes ]; do
+	nTrial=`calc $nTrial+1`
+	echo "Repeating fit $nTrial"
+	doFit
+done
