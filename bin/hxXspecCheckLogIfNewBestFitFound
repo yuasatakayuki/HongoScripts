@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150805
+
+if(ARGV.length<1)then
+	puts "Provide an Xspec log text file."
+	exit
+end
+
+logFile=ARGV[0]
+
+puts (File.read(logFile).include?("New best fit found"))? "yes":"no"
