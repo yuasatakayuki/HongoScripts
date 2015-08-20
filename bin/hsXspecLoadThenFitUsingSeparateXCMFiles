@@ -48,14 +48,18 @@ fi
 
 #determine file names
 outputXCMFile=${outputPrefix}.xcm
+outputModelXCMFile=${outputPrefix}.model.xcm
 outputLogFile=${outputPrefix}.log
 outputWholeLogFile=${outputPrefix}.log.whole
 outputParameterFile=${outputPrefix}.parameters
 
-rm -f ${outputXCMFile} ${outputLogFile}
+rm -f ${outputWholeLogFile}
+touch ${outputWholeLogFile}
 
-#dump configuration
-cat << EOF
+function doFit(){
+	#rm -f ${outputXCMFile} ${outputModelXCMFile} ${outputLogFile} 
+	#dump configuration
+	cat << EOF
 Error comamnds:
 ${errorCommands}
 
@@ -64,6 +68,7 @@ ${eqwCommands}
 
 Files:
       outputXCMFile: ${outputXCMFile}
+ outputModelXCMFile: ${outputModelXCMFile}
       outputLogFile: ${outputLogFile}
  outputWholeLogFile: ${outputWholeLogFile}
 outputParameterFile: ${outputParameterFile}
@@ -72,9 +77,8 @@ Fitting using Xspec...
 
 EOF
 
-#start fitting
-function doFit(){
-xspec << EOF > ${outputWholeLogFile}
+	#start fitting
+	xspec << EOF >> ${outputWholeLogFile}
 @$loadXCMFile
 @$modelXCMFile
 
@@ -94,11 +98,20 @@ log none
 fit 100
 
 save all ${outputXCMFile}
-
+y
+save model ${outputModelXCMFile}
+y
 exit
 
 EOF
 }
+
+cat << EOF
+#-------------------------------------------------
+# hsXspecLoadThenFitUsingSeparateXCMFiles started
+#-------------------------------------------------
+
+EOF
 
 doFit
 
@@ -106,5 +119,7 @@ nTrial=0
 while [ $(hxXspecCheckLogIfNewBestFitFound $outputLogFile) = yes ]; do
 	nTrial=`calc $nTrial+1`
 	echo "Repeating fit $nTrial"
+	loadXCMFile=${outputXCMFile}
+	modelXCMFile=${outputModelXCMFile}
 	doFit
 done
