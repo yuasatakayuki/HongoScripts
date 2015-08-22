@@ -21,7 +21,7 @@ month=`ruby -e "print ARGV[0].split('-')[1]" $dateobs`
 
 version22StartYearMonth=201208
 
-nxbVersion=`ruby -e "if($year$month>$version22StartYearMonth)then puts 2.0; else puts 2.2; end"`
+nxbVersion=`ruby -e "if($year$month>$version22StartYearMonth)then puts 2.2; else puts 2.0; end"`
 
 quickurl=http://www.astro.isas.ac.jp/suzaku/analysis/hxd/pinnxb/pinnxb_ver2.0/
 tunedurl=http://www.astro.isas.ac.jp/suzaku/analysis/hxd/pinnxb/pinnxb_ver${nxbVersion}_tuned/
