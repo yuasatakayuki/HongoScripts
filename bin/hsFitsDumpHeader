@@ -3,13 +3,18 @@
 # Takayuki Yuasa 20150714
 
 if [ _$3 = _ ]; then
-	echo "Provide fits file, HDU index (0 start), and output file name."
+	echo "Provide fits file, HDU index (0 start; can be a single number or a range like 1-3), and output file name."
 	exit
 fi
 
 
 fitsFile=$1
-hduIndex=$2
+hduIndex=$(ruby -e "hduIndex='$2';if(hduIndex.include?('-'))then array=hduIndex.split('-'); puts ((array[0].to_i)..(array[1].to_i)).join(' '); else puts hduIndex; end")
 outputFile=$3
 
-fdump infile="$fitsFile[$hduIndex]" outfile=$outputFile prhead=yes prdata=no columns=- rows=- clobber=yes page=no
+
+
+
+for i in $hduIndex; do
+	fdump infile="$fitsFile[$i]" outfile=$outputFile prhead=yes prdata=no columns=- rows=- clobber=yes page=no
+done
