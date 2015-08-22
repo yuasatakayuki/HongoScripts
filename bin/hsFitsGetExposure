@@ -15,7 +15,7 @@ ln -s $file $tmp
 if [ _$2 = _ ]; then
 	i=`hsFitsIsHeaderKeywordDefined $tmp EXPOSURE`
 	if [ _$i != _ ]; then
-		hsFitsGetHeader $tmp $i exposure
+		hsStringFormatANumber $(hsFitsGetHeader $tmp $i exposure) "%.3f"
 	fi
 else
 	hsFitsSetHeader $tmp 0 exposure $2
