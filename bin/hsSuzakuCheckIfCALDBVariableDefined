@@ -27,7 +27,7 @@ exit -1
 fi
 
 #check CALDBALIAS environment variable
-if [ _$CALDALIAS = _ -o ! -f $CALDBALIAS ];
+if [ _$CALDBALIAS = _ -o ! -f $CALDBALIAS ];
 then
 echo "please set CALDBALIAS environment variable"
 echo "also, please check if CALDBCONFIG file is truely loated there"
