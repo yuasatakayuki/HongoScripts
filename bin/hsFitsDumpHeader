@@ -9,7 +9,7 @@ fi
 
 
 fitsFile=$1
-hduIndex=$(ruby -e "hduIndex='$2';if(hduIndex.include?('-'))then array=hduIndex.split('-'); puts ((array[0].to_i)..(array[1].to_i)).join(' '); else puts hduIndex; end")
+hduIndex=$(ruby -e "hduIndex='$2';if(hduIndex.include?('-'))then array=hduIndex.split('-'); puts ((array[0].to_i)..(array[1].to_i)).to_a.join(' '); else puts hduIndex; end")
 outputFile=$3
 
 
