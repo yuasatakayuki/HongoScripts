@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+
+# Takayuki Yuasa 20150828
+
+require 'mechanize'
+
+
+if(ARGV.length<1)then
+	puts "Provide markdown file (.md or .markdown)."
+	exit
+end
+
+inputFile=ARGV[0]
+
+if(!File.exist?(inputFile))then
+	STDERR.puts "Error: file not found"
+	exit -1
+end
+
+outputFile=File.dirname(inputFile)+"/"+File.basename(inputFile.gsub(".markdown",".md"),".md")+".html"
+
+`pandoc -s #{inputFile} -o #{outputFile}`
+
+
+#set css
+begin
+	html=File.read(outputFile)
+	m=Mechanize.new
+	page=m.get("https://gist.githubusercontent.com/andyferra/2554919/raw/10ce87fe71b23216e3075d5648b8b9e56f7758e1/github.css")
+	githubCSS=<<EOS
+<style>
+#{page.body}
+</style>
+</head>
+EOS
+	html.gsub!("</head>",githubCSS)
+
+	open(outputFile,"w") do |file|
+		file.puts html
+	end
+rescue
+	
+end
