@@ -477,6 +477,10 @@ class Log
   def getReducedChi2()
     return @redChi2
   end
+  alias getRedChi2 getReducedChi2
+  alias getRedChi getReducedChi2
+  alias getRChi2 getReducedChi2
+  alias getRChi getReducedChi2
 
   def getChi2()
     return @redChi2*@dof
@@ -485,6 +489,7 @@ class Log
   def getDOF()
     return @dof
   end
+  alias getNDF getDOF
 
   def getNHP()
     return @nhp
