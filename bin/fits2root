@@ -123,32 +123,63 @@ def convertToTTree(hdu)
 	hduName=hdu.getHDUName
 	columDefinitionMap={}
 	nRows = hdu[0].length
-	hdu.getColumns().each(){|column|
+	hdu.getColumns().each_with_index(){|column,i|
 		columnName=column.getName()
 		columnType=column.getType()
-		columnRepeat=column.getRepeatLength()
+		columnRepeat=1
 		columnTypeROOT=""
-		puts "#{columnName} #{Fits::FitsDataType.toString(columnType)}"
+		tzero=0
+
 		case columnType
 		when Fits::FitsDataType::DOUBLE
 			columnTypeROOT="D"
+			columnRepeat=column.getRepeatLength()
 		when Fits::FitsDataType::FLOATING
 			columnTypeROOT="F"
+			columnRepeat=column.getRepeatLength()
 		when Fits::FitsDataType::LONGLONG
-			columnTypeROOT="I"
+			columnTypeROOT="l"
+			columnRepeat=column.getRepeatLength()
 		when Fits::FitsDataType::LONG
 			columnTypeROOT="I"
+			columnRepeat=column.getRepeatLength()
 		when Fits::FitsDataType::SHORT
 			columnTypeROOT="S"
+			columnRepeat=column.getRepeatLength()
 		when Fits::FitsDataType::BYTE
 			columnTypeROOT="b"
+			columnRepeat=column.getRepeatLength()
 		when Fits::FitsDataType::BOOLEAN
 			columnTypeROOT="O"
+			columnRepeat=column.getRepeatLength()
 		when Fits::FitsDataType::STRING
-			columnTypeROOT="A"
+			columnTypeROOT="b"
+			columnRepeat=column.bytes()
 		when Fits::FitsDataType::ASCII
-			columnTypeROOT="A"
+			columnTypeROOT="b"
+			columnRepeat=column.bytes()
+		else
+			STDERR.puts "Error: FITS column type #{columnType} cannot be handled."
+			exit -1
 		end
+
+		if(hdu.header_index("TZERO#{i+1}")>0)then
+			tzero=hdu.header("TZERO#{i+1}")
+			puts "#{columnName} #{Fits::FitsDataType.toString(columnType)}*#{columnRepeat} TZERO=#{tzero}"
+		else
+			puts "#{columnName} #{Fits::FitsDataType.toString(columnType)}*#{columnRepeat}"
+		end
+
+		if(columnTypeROOT!="b")then
+			if(tzero!=0)then
+				columnTypeROOT.downcase!
+			end
+		end
+		
+		if(columnRepeat!=1)then
+			columnTypeROOT+="["+columnRepeat.to_s+"]"
+		end
+
 		#columDefinitionMap[columnName]=[ type: columnType, repeat: columnRepeat ]
 		columDefinitionMap[columnName]=columnTypeROOT
 	}
