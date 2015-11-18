@@ -70,7 +70,7 @@ end
 #---------------------------------------------
 
 #check pandoc existence
-pandocPath=`which pandoc | tail -1`
+pandocPath=`which pandoc 2> /dev/null | tail -1`
 pandocPath.strip!
 if(File.exist?(pandocPath))then
 	puts "Convert using pandoc..."
