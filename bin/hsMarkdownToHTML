@@ -4,40 +4,80 @@
 
 require 'mechanize'
 
-
 if(ARGV.length<1)then
 	puts "Provide markdown file (.md or .markdown)."
 	exit
 end
 
 inputFile=ARGV[0]
-
+outputFile=File.dirname(inputFile)+"/"+File.basename(inputFile.gsub(".markdown",".md"),".md")+".html"
 if(!File.exist?(inputFile))then
 	STDERR.puts "Error: file not found"
 	exit -1
 end
 
-outputFile=File.dirname(inputFile)+"/"+File.basename(inputFile.gsub(".markdown",".md"),".md")+".html"
-
-`pandoc -s #{inputFile} -o #{outputFile}`
-
-
-#set css
+#get CSS
+githubCSSURL="https://gist.githubusercontent.com/andyferra/2554919/raw/10ce87fe71b23216e3075d5648b8b9e56f7758e1/github.css"
 begin
-	html=File.read(outputFile)
+	puts "Downloading github.css from gist..."
 	m=Mechanize.new
-	page=m.get("https://gist.githubusercontent.com/andyferra/2554919/raw/10ce87fe71b23216e3075d5648b8b9e56f7758e1/github.css")
+	$css=m.get(githubCSSURL).body
+rescue
+	STDERR.puts "Error: could not download CSS from gist."
+	exit -1
+end
+
+
+def convertUsingPandoc(inputFile, outputFile)
+	`pandoc -s #{inputFile} -o #{outputFile}`
+
+	#set css
+	html=File.read(outputFile)
 	githubCSS=<<EOS
 <style>
-#{page.body}
+#{$css}
 </style>
 </head>
 EOS
 	html.gsub!("</head>",githubCSS)
-
 	open(outputFile,"w") do |file|
 		file.puts html
 	end
-rescue
-	
 end
+
+def convertUsingKramdown(inputFile, outputFile)
+	require 'kramdown'
+	Encoding.default_external = 'utf-8'
+	body=Kramdown::Document.new(File.read(inputFile)).to_html
+
+	open(outputFile,"w") do |file|
+		file.puts <<EOS
+<html>
+<head>
+<title></title>
+<style>
+#{$css}
+</style>
+</head>
+#{body}
+</html>
+EOS
+	end
+end
+
+#---------------------------------------------
+#main
+#---------------------------------------------
+
+#check pandoc existence
+pandocPath=`which pandoc | tail -1`
+pandocPath.strip!
+if(File.exist?(pandocPath))then
+	puts "Convert using pandoc..."
+	convertUsingPandoc(inputFile, outputFile)	
+else
+	puts "Converting using kramdown..."
+	convertUsingKramdown(inputFile, outputFile)	
+end
+
+puts "Completed"
